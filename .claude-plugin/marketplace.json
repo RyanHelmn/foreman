@@ -1,0 +1,7 @@
+{
+  "name": "foreman",
+  "owner": { "name": "Ryan Helmn" },
+  "plugins": [
+    { "name": "foreman", "source": "./", "description": "Tiered subagent orchestration with project memory" }
+  ]
+}

@@ -1,0 +1,74 @@
+---
+name: config
+description: >
+  This skill should be used when the user runs "/foreman:config", says "change foreman
+  models", "set the reviewer to opus", "foreman settings", "turn off e2e in foreman",
+  "how many fix iterations", or wants to see or change which model each foreman role uses,
+  the test strategy, gate strictness, or worktree isolation.
+metadata:
+  version: "0.2.0"
+---
+
+# /foreman:config — per-project settings
+
+**Presentation**: use `${CLAUDE_PLUGIN_ROOT}/skills/feature/references/style.md` — header `⚒ foreman · config`, settings as a two-column block, `(recommended)` tags.
+
+Settings live in `.foreman/config.json` (project, committed). A user-level default file at `~/.claude/foreman.json` is used for any key the project file omits. Project wins over user; user wins over the built-in defaults below.
+
+**Map first**: if `.foreman/project-map.md` does not exist, say so in one line (`⚒ no project map yet · running /foreman:map first`), run `/foreman:map` to completion, then carry on with this command.
+
+## Defaults (recommended)
+
+```json
+{
+  "models": {
+    "scout": "haiku",
+    "implementer": "sonnet",
+    "verifier": "sonnet",
+    "reviewer": "opus",
+    "security": "opus"
+  },
+  "maxFixIterations": 3,
+  "testStrategy": "targeted-then-full",
+  "e2e": false,
+  "worktrees": true,
+  "gates": { "enforce": true, "maxBlocks": 3 },
+  "commands": {
+    "build": null, "typecheck": null, "lint": null,
+    "test": null, "testSubset": null, "testIntegration": null, "e2e": null,
+    "audit": null
+  },
+  "limits": { "scoutWords": 300, "implementerWords": 250, "reviewerWords": 500, "securityWords": 600 },
+  "memory": { "briefing": true, "recallLimit": 10 }
+}
+```
+
+`worktrees`: `true` isolates implementers in git worktrees only when two or more run at once, and removes each one as soon as it is merged; `false` never uses worktrees.
+
+Model values are the aliases the Agent tool accepts (`haiku`, `sonnet`, `opus`, `inherit`) or a full model id such as `claude-fable-5-1`. `inherit` means "whatever the main session runs on".
+
+Why these defaults: scouts only read and summarise (Haiku is plenty and cheap); implementers and verifiers need solid code ability at volume (Sonnet); review and security are judgement calls where a stronger model catches what tests can't (Opus). Users who want the top tier for judgement can set `reviewer`/`security` to `claude-fable-5-1`; users optimising cost can set both to `sonnet`.
+
+## Behaviour
+
+1. **No arguments**: read the effective config (merge defaults ← user ← project), show it as a short table with a `(recommended)` tag on values that match defaults, and ask with AskUserQuestion which group to change: models, test strategy & e2e, gates, worktrees, commands. Offer the recommended value as the first option in every question.
+2. **With arguments** like `reviewer=opus e2e=true maxFixIterations=2`: apply them directly.
+3. Validate: model names must be aliases or `claude-` ids; `maxFixIterations` 1–5; `testStrategy` one of `targeted-then-full`, `full-only`, `targeted-only`; `gates.maxBlocks` 1–10.
+4. If `commands.*` are null and a project map exists, fill them from `.foreman/project-map.md` `## Commands` and confirm.
+5. Write the file (create `.foreman/` if missing), then show the final effective config and one line on what changed.
+6. `--user` flag (or "make this my default for all projects"): write to `~/.claude/foreman.json` instead.
+7. **`statusline`** argument (or "set up the foreman status line"): install the live status line.
+   - Copy `${CLAUDE_PLUGIN_ROOT}/scripts/statusline.sh` and `${CLAUDE_PLUGIN_ROOT}/scripts/memory.mjs` to `~/.claude/foreman/` (so the path survives plugin updates), `chmod +x` the script.
+   - Read `~/.claude/settings.json` (create `{}` if missing). If a `statusLine` already exists, show it and ask before replacing. Set:
+     `"statusLine": { "type": "command", "command": "bash ~/.claude/foreman/statusline.sh" }`
+   - Tell the user it shows `⚒ foreman │ #id task │ build ● verify ◐ review ○ security ○ │ it n/max │ ctx % │ model` during a run and `⚒ foreman │ branch │ N open · M lessons │ ctx % │ model` otherwise, and that it appears on the next session (or after `/statusline` reload if available). `statusline off` removes the entry.
+
+## Notes for the lead
+
+- `/foreman:feature` passes `models.<role>` as the `model` argument on every Agent call; the agent files carry the recommended defaults so the plugin works with no config at all.
+- `testStrategy`:
+  - `targeted-then-full` (recommended): targeted on every iteration, full once at the end.
+  - `targeted-only`: never run the full suite (fast feedback projects with slow suites; CI covers full).
+  - `full-only`: full suite each iteration (small suites only).
+- `gates.enforce=false` turns the Stop hook into a reminder instead of a block.
+- `memory.briefing=false` silences the SessionStart briefing; `memory.recallLimit` (default 10) caps recalled items injected into briefs.
