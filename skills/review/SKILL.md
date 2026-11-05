@@ -13,13 +13,15 @@ metadata:
 
 # /foreman:review — audit the project, produce a ranked plan, store it
 
-**Presentation**: render every user-facing block with `${CLAUDE_PLUGIN_ROOT}/skills/feature/references/style.md` (header, phase banners, gate rail, roster, verdict lines, close block) in fenced code blocks. One header and one close block per command.
+**Presentation**: render every user-facing block with `${CLAUDE_PLUGIN_ROOT}/skills/feature/references/style.md` (bold header and phase lines, inline-code gate rail, fenced roster and close block; no horizontal rules or box-drawing). One header and one close block per command.
 
 `MEM` = `node --no-warnings ${CLAUDE_PLUGIN_ROOT}/scripts/memory.mjs` from the project root.
 
 **Map first**: if `.foreman/project-map.md` does not exist, say so in one line (`⚒ no project map yet · running /foreman:map first`), run `/foreman:map` to completion, then carry on with this command.
 
 ## Steps
+
+Workers inherit the scope exclusions in their agent files (`.gitignore`d, dependency, build and cache directories are never read). When you pass explicit paths, pass source paths only.
 
 1. **Preconditions**: read `.foreman/project-map.md`, `stack-guide.md`, `skills.json`, `config.json`. `MEM backlog list --status all` to know what is already tracked (don't re-add; update instead).
 2. **Scope**: from the argument or AskUserQuestion (multiSelect): areas — `security`, `performance`, `architecture`, `testing`, `dx`, `deps`, `observability`, `accessibility`; and paths (default: whole project; for monorepos offer per-app). Default selection: security, performance, architecture, testing, deps.

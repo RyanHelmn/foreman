@@ -11,7 +11,7 @@ metadata:
 
 # /foreman:config — per-project settings
 
-**Presentation**: use `${CLAUDE_PLUGIN_ROOT}/skills/feature/references/style.md` — header `⚒ foreman · config`, settings as a two-column block, `(recommended)` tags.
+**Presentation**: use `${CLAUDE_PLUGIN_ROOT}/skills/feature/references/style.md` — header `**⚒ foreman** · config`, settings as a short fenced two-column block, `(recommended)` tags.
 
 Settings live in `.foreman/config.json` (project, committed). A user-level default file at `~/.claude/foreman.json` is used for any key the project file omits. Project wins over user; user wins over the built-in defaults below.
 

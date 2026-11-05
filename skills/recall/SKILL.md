@@ -11,7 +11,7 @@ metadata:
 
 # /foreman:recall — search project memory
 
-**Presentation**: render every user-facing block with `${CLAUDE_PLUGIN_ROOT}/skills/feature/references/style.md` (header, phase banners, gate rail, roster, verdict lines, close block) in fenced code blocks. One header and one close block per command.
+**Presentation**: render every user-facing block with `${CLAUDE_PLUGIN_ROOT}/skills/feature/references/style.md` (bold header and phase lines, inline-code gate rail, fenced roster and close block; no horizontal rules or box-drawing). One header and one close block per command.
 
 `MEM` = `node --no-warnings ${CLAUDE_PLUGIN_ROOT}/scripts/memory.mjs` from the project root. If `.foreman/memory.db` is missing but `MEMORY.md` exists, `MEM init` rebuilds it automatically.
 

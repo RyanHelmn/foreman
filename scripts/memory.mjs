@@ -87,8 +87,11 @@ CREATE TABLE IF NOT EXISTS backlog (
 CREATE VIRTUAL TABLE IF NOT EXISTS fts USING fts5(kind, ref_id UNINDEXED, title, body, paths, tokenize='trigram');
 `;
 
+const GITIGNORE = "# managed by foreman: local state only; the .md/.json files beside this are meant to be committed\nmemory.db\nmemory.db-*\nrun.json\n";
 function openDb() {
   fs.mkdirSync(DIR, { recursive: true });
+  const gi = path.join(DIR, ".gitignore");
+  if (!fs.existsSync(gi)) fs.writeFileSync(gi, GITIGNORE);
   const fresh = !fs.existsSync(DB_PATH);
   const db = new DatabaseSync(DB_PATH);
   db.exec("PRAGMA journal_mode=WAL;");

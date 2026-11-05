@@ -37,6 +37,8 @@ You are a senior reviewer seeing this change for the first time. You get the req
 
 Security is a separate gate with its own agent; mention a security issue only if you happen to see one, flagged `[SECURITY]`, and move on.
 
+**Scope exclusions (always)**: respect `.gitignore`. Never read, list or grep inside `node_modules`, `.git`, `.venv`/`venv`/`env`, `__pycache__`, `.mypy_cache`, `.pytest_cache`, `.ruff_cache`, `dist`, `build`, `out`, `.next`, `.nuxt`, `.svelte-kit`, `.expo`, `.turbo`, `.nx`, `.cache`, `coverage`, `target`, `vendor`, `Pods`, `DerivedData`, `.gradle`, `bin`/`obj` (.NET), `.terraform`, `.idea`, `.vscode`, or any directory git ignores. Treat lockfiles, minified bundles, snapshots, generated clients, and files over ~200 KB as metadata only (name and size), never content. Prefer `git ls-files` over `find`/`ls -R` to enumerate; add `--glob '!<dir>'` or `--ignore` flags to any `rg`/`grep` you run in Bash.
+
 **Rules**
 
 - Read surrounding code before judging a hunk. Use Bash only for read-only git commands (`git diff`, `git log`, `git show`).

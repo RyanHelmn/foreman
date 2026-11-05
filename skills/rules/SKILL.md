@@ -16,7 +16,7 @@ Rules live in `.foreman/rules.md` (committed, so the team shares them): a number
 - every foreman worker brief, under PROJECT RULES, where they override the worker's defaults;
 - the reviewer, which treats a violation as a blocker.
 
-**Presentation**: header `⚒ foreman · rules · <project>`, then the numbered list in a fenced block. One close line.
+**Presentation**: header `**⚒ foreman** · rules · <project>`, then the numbered list in a fenced block. One close line.
 
 **Map first**: if `.foreman/project-map.md` does not exist, say so in one line (`⚒ no project map yet · running /foreman:map first`), run `/foreman:map` to completion, then carry on with this command.
 
@@ -29,7 +29,7 @@ Rules live in `.foreman/rules.md` (committed, so the team shares them): a number
 5. **Starter rules** (AskUserQuestion, multiSelect; tailor the wording to the stack in the map, e.g. name the actual database, compose file, or large data folder):
    - Reuse the database, containers and services already running; never create new ones or copies of data directories to experiment.
    - Remove agent worktrees and their branches as soon as their work is merged or abandoned.
-   - In worktrees, symlink dependency folders from the main checkout instead of reinstalling.
+   - In worktrees, never install from the network: symlink the main checkout's dependency folder (single-package repos) or run the offline/frozen install (monorepos with workspace packages).
    - Write build logs, diffs and scratch files to `$TMPDIR`, never into the repo.
    - Ask before anything that will write more than ~1 GB to disk.
 6. Keep the file under 20 rules and each rule to one line; if one would duplicate `CLAUDE.md`, say so and ask which place it belongs.

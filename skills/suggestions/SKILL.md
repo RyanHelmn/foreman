@@ -13,7 +13,7 @@ metadata:
 
 # /foreman:suggestions — review the vision, suggest what to build next, store the keepers
 
-**Presentation**: render every user-facing block with `${CLAUDE_PLUGIN_ROOT}/skills/feature/references/style.md` in fenced code blocks. Header `⚒ foreman · suggestions · <project>`; phases `◇ gather`, `? confirm`, `◇ research`, `⚒ draft`, `▤ critique`, `✎ remember`. One header and one close block.
+**Presentation**: render every user-facing block with `${CLAUDE_PLUGIN_ROOT}/skills/feature/references/style.md` (bold header and phase lines, no rules). Header `**⚒ foreman** · suggestions · <project>`; phases `◇ gather`, `? confirm`, `◇ research`, `⚒ draft`, `▤ critique`, `✎ remember`. One header and one close block.
 
 `MEM` = `node --no-warnings ${CLAUDE_PLUGIN_ROOT}/scripts/memory.mjs` from the project root.
 

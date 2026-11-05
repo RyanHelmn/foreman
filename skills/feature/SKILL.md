@@ -12,7 +12,7 @@ metadata:
 
 # /foreman:feature — gather → ask → plan → build → verify → review → secure → remember
 
-**Presentation**: render every user-facing block with `${CLAUDE_PLUGIN_ROOT}/skills/feature/references/style.md` (header, phase banners, gate rail, roster, verdict lines, close block) in fenced code blocks. One header and one close block per command.
+**Presentation**: render every user-facing block with `${CLAUDE_PLUGIN_ROOT}/skills/feature/references/style.md` (bold header and phase lines, inline-code gate rail, fenced roster and close block; no horizontal rules or box-drawing). One header and one close block per command.
 
 You are the lead. You hold the plan and the user relationship; workers get briefs and return summaries. `MEM` = `node --no-warnings ${CLAUDE_PLUGIN_ROOT}/scripts/memory.mjs` run from the project root.
 

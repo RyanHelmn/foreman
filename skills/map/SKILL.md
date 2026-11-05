@@ -13,7 +13,7 @@ metadata:
 
 # /foreman:map — build the project's context once, reuse it every run
 
-**Presentation**: render every user-facing block with `${CLAUDE_PLUGIN_ROOT}/skills/feature/references/style.md` (header, phase banners, gate rail, roster, verdict lines, close block) in fenced code blocks. One header and one close block per command.
+**Presentation**: render every user-facing block with `${CLAUDE_PLUGIN_ROOT}/skills/feature/references/style.md` (bold header and phase lines, inline-code gate rail, fenced roster and close block; no horizontal rules or box-drawing). One header and one close block per command.
 
 Outputs, all in `.foreman/` at the project root:
 
@@ -34,6 +34,8 @@ Say which phase is starting in one line each. Never skip Phase 4.
 ## Phase 1 — Fingerprint (parallel scouts)
 
 Dispatch up to four `scout` agents (model `models.scout` from config if present, else `haiku`), one question each. Do not read the repo in the main context. Stacks are not assumed: scouts must identify whatever is there.
+
+Tell every scout to enumerate with `git ls-files` (falling back to `rg --files`, which honours `.gitignore`) and to stay out of dependency, build and cache directories (`node_modules`, `.venv`, `dist`, `.next`, `target`, `vendor`, …); only their *presence* is a signal. Lockfiles identify the package manager by name; never read them. The layout section of the map lists source directories only; generated and vendored paths go in one line under Conventions as "ignored".
 
 1. **Workspace & tooling** — repo shape (monorepo markers: `pnpm-workspace.yaml`, `turbo.json`, `nx.json`, `go.work`, Cargo workspace, Gradle multi-project), package manager/lockfile, language versions (`.nvmrc`, `.tool-versions`, `pyproject`, `go.mod`), formatter/linter, CI config, Docker/compose, env handling and validation.
 2. **Apps & frameworks** — per app/package: language, framework and version, routing style, UI/styling, data-fetching/state, API docs (OpenAPI/Swagger, GraphQL schema, tRPC), mobile (Expo/RN, Flutter, SwiftUI, Compose), desktop (Electron/Tauri), workers/queues.
@@ -67,7 +69,7 @@ Record each answer twice: in `project-map.md › Design decisions` tagged `[user
 
 1. `MEM init` (creates the db; imports `MEMORY.md` if present).
 2. Write `config.json` from `/foreman:config` defaults with the discovered commands; `testStrategy: "targeted-then-full"`, `e2e: false` unless the user said otherwise.
-3. Ensure `.gitignore` has `.foreman/run.json`, `.foreman/memory.db`, `.foreman/memory.db-*`.
+3. `MEM init` also writes `.foreman/.gitignore` (ignores `memory.db*` and `run.json`), so the project's own `.gitignore` needs no changes; confirm it exists.
 4. `MEM export`, then reply in ≤10 lines: stack summary, skills installed per role, decisions confirmed, and the next command: `/foreman:feature <task>` or `/foreman:review`.
 
 ## Re-running

@@ -43,7 +43,7 @@ PROJECT RULES (from .foreman/rules.md, override everything else):
 
 ENVIRONMENT (hard rules):
 - Use the services the main checkout already runs (database, containers, dev server). Never start new containers, create databases, or copy data directories.
-- In a worktree, symlink the main checkout's dependency folders (node_modules, .venv, vendor) instead of installing.
+- In a worktree, don't reinstall from the network: in a single-package repo symlink the main checkout's dependency folder (node_modules, .venv, vendor); in a monorepo with workspace packages run the package manager's offline/frozen install instead (`pnpm install --offline --frozen-lockfile`, `npm ci --offline`, `yarn install --immutable`), because a symlinked node_modules resolves workspace packages back to the main checkout's source, not this worktree's.
 - Logs, diffs and scratch files go to $TMPDIR, never into the repo.
 
 CONSTRAINTS: no new deps unless listed here: <list or none>; no refactors outside scope

@@ -12,13 +12,15 @@ metadata:
 
 # /foreman:check [code|security|both] [scope] — gates on demand
 
-**Presentation**: render every user-facing block with `${CLAUDE_PLUGIN_ROOT}/skills/feature/references/style.md` (header, phase banners, gate rail, roster, verdict lines, close block) in fenced code blocks. One header and one close block per command.
+**Presentation**: render every user-facing block with `${CLAUDE_PLUGIN_ROOT}/skills/feature/references/style.md` (bold header and phase lines, inline-code gate rail, fenced roster and close block; no horizontal rules or box-drawing). One header and one close block per command.
 
 Run the `reviewer` and/or `security-auditor` on a diff without a full feature run. Default: `both`.
 
 **Map first**: if `.foreman/project-map.md` does not exist, say so in one line (`⚒ no project map yet · running /foreman:map first`), run `/foreman:map` to completion, then carry on with this command.
 
 ## Steps
+
+Workers inherit the scope exclusions in their agent files (`.gitignore`d, dependency, build and cache directories are never read). When you pass explicit paths, pass source paths only.
 
 1. **Scope**: `branch` (default when ahead of base: `git diff <base>...HEAD`, base = `main`/`master` or the argument), `staged` (`git diff --cached`), `last` (`git show HEAD`), or explicit paths.
 2. **Context**: requirements from the argument, PR description, or commit messages (ask one question if unclear); conventions, decisions, Auth & trust and Risk areas from `.foreman/project-map.md`; `skills.json` role paths + `stack-guide.md`; `MEM relevant --paths <changed files>` for lessons that apply.

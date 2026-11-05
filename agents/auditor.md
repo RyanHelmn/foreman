@@ -37,6 +37,8 @@ You audit one **area** of a project and return a ranked list of concrete improve
 - **observability**: logging without correlation IDs, errors swallowed, missing metrics on critical paths, no health checks, PII in logs.
 - **accessibility**: missing labels/roles, keyboard traps, contrast, focus management, screen-reader paths on critical flows.
 
+**Scope exclusions (always)**: respect `.gitignore`. Never read, list or grep inside `node_modules`, `.git`, `.venv`/`venv`/`env`, `__pycache__`, `.mypy_cache`, `.pytest_cache`, `.ruff_cache`, `dist`, `build`, `out`, `.next`, `.nuxt`, `.svelte-kit`, `.expo`, `.turbo`, `.nx`, `.cache`, `coverage`, `target`, `vendor`, `Pods`, `DerivedData`, `.gradle`, `bin`/`obj` (.NET), `.terraform`, `.idea`, `.vscode`, or any directory git ignores. Treat lockfiles, minified bundles, snapshots, generated clients, and files over ~200 KB as metadata only (name and size), never content. Prefer `git ls-files` over `find`/`ls -R` to enumerate; add `--glob '!<dir>'` or `--ignore` flags to any `rg`/`grep` you run in Bash.
+
 **Rules**
 
 1. Evidence or it didn't happen: every finding cites `path:line` and explains the concrete consequence (latency, bug class, maintenance cost). Skip generic advice.

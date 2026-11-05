@@ -41,7 +41,7 @@ Design is distilled from Anthropic's published guidance (sources in `skills/orch
 
 ## Look
 
-Every command speaks one visual language (`skills/feature/references/style.md`): a `⚒ foreman · …` header, phase banners (`── ◇ gather ──`), a one-line gate rail (`build ● · verify ◐ · review ○ · security ○   it 1/3 · 4 calls`), a worker roster with per-role sigils (◇ scout ▣ implementer ⚖ verifier ◎ reviewer ⛨ security ▤ auditor), verdict lines, and a close block. `/foreman:config statusline` installs a coloured Claude Code status line that tracks the live run (feature, gates, iteration, context %, model) and shows branch + memory counts when idle. The memory CLI is coloured on a TTY, plain when piped, JSON with `--json`.
+Every command speaks one visual language (`skills/feature/references/style.md`) designed for Claude Code's markdown renderer: a bold `⚒ foreman · …` header, bold phase lines (`◇ gather`, `▣ build`, `⚖ verify`…), a one-line inline-code gate rail (`build ● · verify ◐ · review ○ · security ○`), a fenced worker roster with per-role sigils (◇ scout ▣ implementer ⚖ verifier ◎ reviewer ⛨ security ▤ auditor), verdict lines, and a fenced close block. No horizontal rules or box-drawing, which render badly in the terminal. `/foreman:config statusline` installs a coloured Claude Code status line that tracks the live run (feature, gates, iteration, context %, model) and shows branch + memory counts when idle. The memory CLI is coloured on a TTY, plain when piped, JSON with `--json`.
 
 ## Memory
 
@@ -75,7 +75,7 @@ node --no-warnings <plugin>/scripts/memory.mjs briefing | recall <q> | feature l
    ```
 
    Answer `y` to add the marketplace, then pick a scope (user is first). From a shell: `claude plugin install foreman --marketplace RyanHelmn/foreman`. In the desktop app: click + next to the prompt box → Plugins → Add marketplace `RyanHelmn/foreman` → Add plugin.
-2. In a project: `/foreman:map`. Commit `.foreman/project-map.md`, `stack-guide.md`, `config.json`, `skills.json`, `MEMORY.md`; it gitignores `run.json` and `memory.db*`.
+2. In a project: `/foreman:map`. Commit `.foreman/`; it ships its own `.gitignore` that excludes `memory.db*` and `run.json`, so the map, stack guide, config, skills map, rules and `MEMORY.md` are committed and the live state isn't.
 3. Optional `/foreman:config` (e.g. `reviewer=claude-fable-5-1`, `e2e=true`; `--user` for global defaults).
 
 Requirements: Claude Code with plugins, git (worktrees), Node ≥ 22.13 (built-in SQLite) for memory and the briefing hook; `npx` optional for skill discovery. No API keys, no native modules.
