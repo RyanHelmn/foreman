@@ -14,6 +14,7 @@ type Worker = Pick<AgentInfo, 'id' | 'type' | 'description' | 'status'>
 const GATES: Gate[] = ['verify', 'review', 'security']
 const PREFIX = 'foreman:'
 const DONE_MS = 15000
+const COMPACT_AT = 60
 
 const gate = (v?: string) => (v === 'passed' ? '●' : v === 'failed' ? '✕' : v === 'running' ? '◐' : '○')
 const mark = (s: string) => (s === 'completed' ? '●' : s === 'failed' || s === 'killed' ? '✕' : '◐')
@@ -46,35 +47,81 @@ export const line = (s: {
   return [head, ...shown].join(' · ')
 }
 
+export const keep = (run: Run | null, cmd?: string) =>
+  run?.active
+    ? `foreman feature #${run.featureId ?? '?'} is mid-run: "${run.task ?? ''}". Keep the approved plan (units, owned files, interfaces, done conditions), the user's decisions, gate states, iteration ${run.iteration ?? 0}, changed files, open blockers and the exact next step. The full state is in .foreman/run.json: re-read it after this compaction and carry on from its "next" field.`
+    : cmd
+      ? `/foreman:${cmd} is in progress. Keep what it has done, its findings so far, what is left, and the exact next step.`
+      : undefined
+
 export const register: Register = on => {
   let cmd: string | undefined
   let before = new Set<string>()
   let isTurnOpen = false
+  let dir: string | undefined
+  let run: Run | null = null
+  let isCompacting = false
+  let hasRunCommand = false
+  let hint: string | undefined
 
   on('skill.prompt', async ($, e, next) => {
     if (e.skill.startsWith(PREFIX)) {
       cmd = e.skill.slice(PREFIX.length)
+      hasRunCommand = true
       before = new Set((await $.agent.list()).map(a => a.id))
     }
     return next(e)
   })
 
   on('turn.start', ($, e, next) => {
-    if (!e.agentId) isTurnOpen = true
+    if (!e.agentId) {
+      isTurnOpen = true
+      hint = undefined
+    }
     return next(e)
   })
 
-  on('turn.complete', ($, e, next) => {
-    if (!e.agentId) isTurnOpen = false
-    return next(e)
+  on('turn.complete', async ($, e, next) => {
+    const done = await next(e)
+    if (e.agentId) return done
+    isTurnOpen = false
+    if (!dir) return done
+
+    if (!(await $.fs.stat(dir).then(s => s.kind === 'dir').catch(() => false))) return done
+    const config = await $.fs.read(`${dir}/config.json`).then(t => JSON.parse(t)).catch(() => null)
+    const at = config?.context?.compactAt ?? COMPACT_AT
+    const pct = (await $.session.usage()).context.percent ?? 0
+    if (at === false || pct < at || isCompacting) return done
+
+    if (!run?.active) {
+      if (hasRunCommand) hint = `⚒ context ${pct}% · foreman's work is saved, /clear is safe`
+      return done
+    }
+
+    isCompacting = true
+    $.clock.after(1000, async () => {
+      try {
+        $.ui.toast(`⚒ context ${pct}% · compacting`)
+        await $.session.compact({ instructions: keep(run, cmd) })
+      } catch {
+      } finally {
+        isCompacting = false
+      }
+    })
+    return done
   })
+
+  on('session.compact', ($, e, next) => {
+    const note = e.agentId ? undefined : keep(run, cmd)
+    if (!note || e.instructions?.includes(note)) return next(e)
+    return next({ ...e, instructions: e.instructions ? `${e.instructions}\n\n${note}` : note })
+  }).catch(($, e, next) => next(e))
 
   on('session.start', async ($, e, next) => {
-    const dir = `${await $.session.cwd()}/.foreman`
+    dir = `${await $.session.cwd()}/.foreman`
     const json = (p: string) => $.fs.read(p).then(t => JSON.parse(t)).catch(() => null)
 
     let seen = -1
-    let run: Run | null = null
     let max = 3
     let gates: Run['gates'] | null = null
     let idleSince = 0
@@ -110,7 +157,7 @@ export const register: Register = on => {
           before = new Set(agents.map(a => a.id))
         }
 
-        const text = line({ run, max, cmd, workers: workers.filter(w => !before.has(w.id)), isIdle })
+        const text = line({ run, max, cmd, workers: workers.filter(w => !before.has(w.id)), isIdle }) ?? hint
         if (text !== shown) {
           shown = text
           $.ui.status(text)

@@ -35,7 +35,7 @@ Design is distilled from Anthropic's published guidance (sources in `skills/orch
 | `auditor` | One-area whole-project audit (performance, architecture, testing, dx, deps, …) with plans | Opus |
 | `SessionStart` hook | ~10-line memory briefing in mapped projects (zero tokens: shell + node) | — |
 | `Stop` hook | Refuses to end a feature run while gates are pending; bounded; fails open | — |
-| `hooks/status.ts` | Live line under the prompt for any foreman command: workers for map/review/research, gate rail during a feature, toasts when a gate passes or fails | — |
+| `hooks/status.ts` | Live line under the prompt for any foreman command (workers for map/review/research, gate rail during a feature, toasts when a gate passes or fails), and context handling: past `context.compactAt` (default 60%) it compacts between turns during a feature run, or suggests `/clear` once a foreman command has finished; every compaction keeps the run's state | — |
 | `scripts/memory.mjs` | SQLite memory CLI (`node:sqlite`, FTS5 trigram), no npm install | — |
 | `scripts/statusline.sh` | Coloured Claude Code status line for the live run; installed by `/foreman:config statusline` | — |
 

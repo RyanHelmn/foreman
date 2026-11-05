@@ -39,9 +39,12 @@ Settings live in `.foreman/config.json` (project, committed). A user-level defau
     "audit": null
   },
   "limits": { "scoutWords": 300, "implementerWords": 250, "reviewerWords": 500, "securityWords": 600 },
-  "memory": { "briefing": true, "recallLimit": 10 }
+  "memory": { "briefing": true, "recallLimit": 10 },
+  "context": { "compactAt": 60 }
 }
 ```
+
+`context.compactAt`: the context % at which foreman acts: during an active feature run it compacts between turns (keeping the run's state); after a foreman command has finished it suggests `/clear` in the status line instead. Other sessions are left to Claude Code. `false` turns it off.
 
 `worktrees`: `true` isolates implementers in git worktrees only when two or more run at once, and removes each one as soon as it is merged; `false` never uses worktrees.
 

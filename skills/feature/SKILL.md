@@ -37,10 +37,13 @@ You are the lead. You hold the plan and the user relationship; workers get brief
 
 ```json
 { "active": true, "task": "<one line>", "featureId": <id>, "started": "<iso>", "iteration": 0,
+  "phase": "understand", "next": "<the exact next step>", "plan": null,
   "changedFiles": [], "worktrees": [], "gates": { "verify": "pending", "review": "pending", "security": "pending" }, "blockCount": 0 }
 ```
 
-The Stop hook refuses to end the session while gates are pending. Keep this file current.
+The Stop hook refuses to end the session while gates are pending. Keep this file current: at every phase boundary write `phase`, `next` (the exact next step) and, once approved, `plan` (units with owned files, interfaces, done conditions; ≤15 lines). It is the checkpoint a compaction resumes from.
+
+**Context**: while a run is active, foreman compacts between turns once context passes `context.compactAt` (default 60%), and every compaction is told to keep the run. Once a foreman command has finished, it suggests `/clear` instead, since everything is saved. After any compaction (a summary replaces the earlier conversation), re-read `.foreman/run.json` and carry on from `next`; don't redo finished phases.
 
 ## Phase 1 — Understand, then ask until confident
 

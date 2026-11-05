@@ -1,6 +1,6 @@
 import { expect, test } from 'claude-code/testing'
 
-import { line } from './status'
+import { keep, line } from './status'
 
 const w = (type: string, status: string, description: string) =>
   ({ id: description, type: `foreman:${type}`, status, description }) as Parameters<typeof line>[0]['workers'][number]
@@ -38,4 +38,11 @@ test('a command before its workers, after it ends, and nothing at all', () => {
     '⚒ map done · 1 worker',
   )
   expect(line({ run: { active: false }, max: 3, workers: [], isIdle: true })).toBeUndefined()
+})
+
+test('compaction keeps a live run, a running command, or nothing', () => {
+  expect(keep({ active: true, task: 'add rate limiting', featureId: 12, iteration: 2 })).toContain('re-read it after this compaction')
+  expect(keep({ active: true, task: 'add rate limiting', featureId: 12, iteration: 2 })).toContain('iteration 2')
+  expect(keep(null, 'review')).toBe('/foreman:review is in progress. Keep what it has done, its findings so far, what is left, and the exact next step.')
+  expect(keep({ active: false }, undefined)).toBeUndefined()
 })
