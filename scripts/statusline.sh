@@ -20,16 +20,13 @@ let raw=""; process.stdin.on("data",d=>raw+=d).on("end",()=>{
   const read=p=>{try{return JSON.parse(fs.readFileSync(p,"utf8"))}catch{return null}};
   const run=read(path.join(cwd,".foreman","run.json"));
   let branch=""; try{branch=cp.execSync("git symbolic-ref --short HEAD",{cwd,stdio:["ignore","pipe","ignore"],timeout:500}).toString().trim()}catch{}
-  const glyph=v=>v==="passed"?`${c.gr}●${c.r}`:v==="failed"?`${c.rd}✕${c.r}`:v==="running"?`${c.am}◐${c.r}`:`${c.gy}○${c.r}`;
   if(run&&run.active) parts.push(`${c.wh}#${run.featureId||"?"} ${(run.task||"").slice(0,24)}${(run.task||"").length>24?"…":""}${c.r}`);
-  {
-    if(branch) parts.push(`${c.bl}${branch}${c.r}`);
-    if(fs.existsSync(path.join(cwd,".foreman","memory.db"))){
-      try{
-        const mem=cp.execSync(`node --no-warnings "${path.join(process.env.FOREMAN_SCRIPTS,"memory.mjs")}" briefing --json --root "${cwd}"`,{stdio:["ignore","pipe","ignore"],timeout:800}).toString();
-        const m=JSON.parse(mem); parts.push(`${c.dim}${m.open} open · ${m.lessons} lessons${c.r}`);
-      }catch{}
-    }
+  if(branch) parts.push(`${c.bl}${branch}${c.r}`);
+  if(fs.existsSync(path.join(cwd,".foreman","memory.db"))){
+    try{
+      const mem=cp.execSync(`node --no-warnings "${path.join(process.env.FOREMAN_SCRIPTS,"memory.mjs")}" briefing --json --root "${cwd}"`,{stdio:["ignore","pipe","ignore"],timeout:800}).toString();
+      const m=JSON.parse(mem); parts.push(`${c.dim}${m.open} open · ${m.lessons} lessons${c.r}`);
+    }catch{}
   }
   const cw=s.context_window||{}; const pct=cw.used_percentage!=null?Math.round(cw.used_percentage):null;
   if(pct!=null){const col=pct>80?c.rd:pct>60?c.am:c.gr; parts.push(`${col}ctx ${pct}%${c.r}`);}

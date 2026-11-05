@@ -30,8 +30,9 @@ You are the lead. You hold the plan and the user relationship; workers get brief
 1. Read `.foreman/config.json`, `project-map.md`, `skills.json`, `stack-guide.md`, and `rules.md` if present (paste its rules into every worker brief; they override your own judgement). If `package.json`/lockfile (or equivalent) changed since the map's commit, refresh the affected section with one scout.
 2. Resolve `models.<role>` from config; pass each as the `model` argument on Agent calls.
 3. **Recall**: `MEM relevant --text "<task>" --paths <likely paths>` and `MEM recall <key terms>`. Read the hits (lessons, decisions, similar features, open backlog items touching these paths). If a backlog item matches the task, note its id to close it at the end.
-4. `MEM feature start --title "<task>" --tags <tags> --files <likely paths>` → keep the id.
-5. Create `.foreman/run.json`:
+4. If `.foreman/run.json` already has `active: true`, ask whether to resume or abandon it. Resume: keep the file and its `featureId`, remove `sessionId`, set `started` to now, skip steps 5–6 and carry on from `next`. Abandon: as in "When things go wrong", then continue.
+5. `MEM feature start --title "<task>" --tags <tags> --files <likely paths>` → keep the id.
+6. Create `.foreman/run.json`:
 
 ```json
 { "active": true, "task": "<one line>", "featureId": <id>, "started": "<iso>", "iteration": 0,

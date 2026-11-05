@@ -93,6 +93,8 @@ Precede the AskUserQuestion with the `**? confirm**` phase line; after answers: 
   in progress  #12 add rate limiting to login
   recent       #11 ● export CSV · #10 ● webhook retries
   backlog      3 open (1 critical/high) · lessons 14
+  · gotcha     ThrottlerGuard must come after AuthGuard
+  /foreman:feature · /foreman:review · /foreman:recall · /foreman:map
 ```
 
 ## Rules
