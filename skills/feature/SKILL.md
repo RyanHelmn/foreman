@@ -6,8 +6,6 @@ description: >
   multi-file feature, refactor or bug fix to be done with tiered subagents, verification,
   review, a security gate, and memory of what was learned. Not for one-line fixes or
   questions.
-metadata:
-  version: "0.2.0"
 ---
 
 # /foreman:feature — gather → ask → plan → build → verify → review → secure → remember

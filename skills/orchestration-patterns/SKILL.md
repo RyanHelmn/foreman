@@ -8,8 +8,6 @@ description: >
   decomposition. It holds the reasoning behind foreman's design, distilled from
   Anthropic's published guidance, so the lead can make judgement calls rather than
   follow the loop blindly.
-metadata:
-  version: "0.1.0"
 ---
 
 # Orchestration patterns — the reasoning behind foreman

@@ -34,10 +34,10 @@ Design is distilled from Anthropic's published guidance (sources in `skills/orch
 | `security-auditor` | Source→sink security gate using the stack guide + installed security skills | Opus |
 | `auditor` | One-area whole-project audit (performance, architecture, testing, dx, deps, …) with plans | Opus |
 | `SessionStart` hook | ~10-line memory briefing in mapped projects (zero tokens: shell + node) | — |
-| `Stop` hook | Refuses to end a feature run while gates are pending; bounded; fails open | — |
+| `Stop` hook | Refuses to end a feature run while gates are pending; bounded; only in the owning session and within `gates.staleHours`; fails open | — |
 | `hooks/status.ts` | Live line under the prompt for any foreman command (workers for map/review/research, gate rail during a feature, toasts when a gate passes or fails), and context handling: past `context.compactAt` (default 60%) it compacts between turns during a feature run, or suggests `/clear` once a foreman command has finished; every compaction keeps the run's state | — |
 | `scripts/memory.mjs` | SQLite memory CLI (`node:sqlite`, FTS5 trigram), no npm install | — |
-| `scripts/statusline.sh` | Coloured Claude Code status line for the live run; installed by `/foreman:config statusline` | — |
+| `scripts/statusline.sh` | Coloured status line: branch, memory counts, context %, model (the mod shows the run); installed by `/foreman:config statusline` | — |
 
 ## Look
 
@@ -77,6 +77,8 @@ node --no-warnings <plugin>/scripts/memory.mjs briefing | recall <q> | feature l
    Answer `y` to add the marketplace, then pick a scope (user is first). From a shell: `claude plugin install foreman --marketplace RyanHelmn/foreman`. In the desktop app: click + next to the prompt box → Plugins → Add marketplace `RyanHelmn/foreman` → Add plugin.
 2. In a project: `/foreman:map`. Commit `.foreman/`; it ships its own `.gitignore` that excludes `memory.db*` and `run.json`, so the map, stack guide, config, skills map, rules and `MEMORY.md` are committed and the live state isn't.
 3. Optional `/foreman:config` (e.g. `reviewer=claude-fable-5-1`, `e2e=true`; `--user` for global defaults).
+
+Tests: `npm test` (Node's built-in runner, no dependencies) covers the stop gate and the memory CLI; the mod has its own `hooks/status.test.ts`.
 
 Requirements: Claude Code with plugins, git (worktrees), Node ≥ 22.13 (built-in SQLite) for memory and the briefing hook; `npx` optional for skill discovery. No API keys, no native modules.
 

@@ -5,8 +5,6 @@ description: >
   says "add a rule", "foreman rules", "always/never do X in this project", "stop creating
   worktrees/databases/containers", "Claude keeps bloating the project", or wants a project
   rule that every Claude Code session and every foreman worker follows.
-metadata:
-  version: "0.1.0"
 ---
 
 # /foreman:rules — project rules every session and worker follows

@@ -1,9 +1,8 @@
 #!/usr/bin/env bash
-# foreman status line for Claude Code.
-# Reads the status-line JSON on stdin (model, workspace, context_window, cost) and the project's
-# .foreman/run.json, and prints one coloured line:
-#   ⚒ foreman │ #12 add rate limiting… │ build ● verify ◐ review ○ security ○ │ it 1/3 │ ctx 38% │ opus
-# Outside a foreman run it prints a quiet line: ⚒ foreman │ main │ 3 open · 14 lessons │ ctx 12% │ opus
+# foreman status line for Claude Code (idle view).
+# The live run (gate rail, iteration, workers) is shown by the hooks/status.ts mod under the prompt; this line
+# complements it with what the mod doesn't show: branch, memory counts, context % and model.
+#   ⚒ foreman │ feat/x │ 3 open · 14 lessons │ ctx 38% │ opus 5.5
 # Enable:  /foreman:config statusline   (or add to ~/.claude/settings.json:
 #   "statusLine": { "type": "command", "command": "bash ~/.claude/foreman/statusline.sh" })
 set -u
@@ -22,15 +21,8 @@ let raw=""; process.stdin.on("data",d=>raw+=d).on("end",()=>{
   const run=read(path.join(cwd,".foreman","run.json"));
   let branch=""; try{branch=cp.execSync("git symbolic-ref --short HEAD",{cwd,stdio:["ignore","pipe","ignore"],timeout:500}).toString().trim()}catch{}
   const glyph=v=>v==="passed"?`${c.gr}●${c.r}`:v==="failed"?`${c.rd}✕${c.r}`:v==="running"?`${c.am}◐${c.r}`:`${c.gy}○${c.r}`;
-  if(run&&run.active){
-    const title=(run.task||"").length>34?(run.task||"").slice(0,33)+"…":(run.task||"");
-    parts.push(`${c.wh}#${run.featureId||"?"} ${title}${c.r}`);
-    const g=run.gates||{}; const built=(run.changedFiles||[]).length>0;
-    const buildG=built?`${c.gr}●${c.r}`:(run.iteration>0?`${c.am}◐${c.r}`:`${c.gy}○${c.r}`);
-    parts.push(`build ${buildG} verify ${glyph(g.verify)} review ${glyph(g.review)} security ${glyph(g.security)}`);
-    const max=(read(path.join(cwd,".foreman","config.json"))||{}).maxFixIterations||3;
-    parts.push(`${c.dim}it ${run.iteration||0}/${max}${c.r}`);
-  } else {
+  if(run&&run.active) parts.push(`${c.wh}#${run.featureId||"?"} ${(run.task||"").slice(0,24)}${(run.task||"").length>24?"…":""}${c.r}`);
+  {
     if(branch) parts.push(`${c.bl}${branch}${c.r}`);
     if(fs.existsSync(path.join(cwd,".foreman","memory.db"))){
       try{

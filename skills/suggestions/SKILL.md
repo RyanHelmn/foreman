@@ -7,8 +7,6 @@ description: >
   ideas grounded in the project and its foreman memory, stored as backlog items that
   /foreman:feature can execute. Not for code quality (use /foreman:review) or one task's
   plan (use /foreman:feature).
-metadata:
-  version: "0.1.0"
 ---
 
 # /foreman:suggestions — review the vision, suggest what to build next, store the keepers

@@ -5,8 +5,6 @@ description: >
   we decide about X", "have we done something like this before", "what lessons do we have
   on Y", "show the backlog", "what features has foreman shipped", "why did we choose Z",
   or wants to search foreman's project memory of features, decisions, lessons and backlog.
-metadata:
-  version: "0.2.0"
 ---
 
 # /foreman:recall — search project memory

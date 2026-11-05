@@ -6,8 +6,6 @@ description: >
   PR", "security check this diff", "is this change safe", "review the staged changes", or
   wants an independent diff-level code review and/or security audit by subagents that have
   not seen the work being written. For a whole-project audit use /foreman:review.
-metadata:
-  version: "0.2.0"
 ---
 
 # /foreman:check [code|security|both] [scope] — gates on demand

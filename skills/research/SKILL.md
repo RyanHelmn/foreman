@@ -5,8 +5,6 @@ description: >
   out scouts", "research this in parallel", "map how X works in this codebase", "find
   everything about Y", or asks a question whose answer requires reading many files or
   sources and would bloat the main conversation.
-metadata:
-  version: "0.2.0"
 ---
 
 # /foreman:research — parallel cheap research, compact answer

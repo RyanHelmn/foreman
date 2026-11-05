@@ -7,8 +7,6 @@ description: >
   across security, performance, architecture, testing, DX, dependencies, observability or
   accessibility, stored as a backlog that /foreman:feature can execute item by item.
   For reviewing a diff, use /foreman:check instead.
-metadata:
-  version: "0.2.0"
 ---
 
 # /foreman:review — audit the project, produce a ranked plan, store it

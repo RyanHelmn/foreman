@@ -7,8 +7,6 @@ description: >
   the stack (any language or framework), maps the codebase, discovers and installs
   stack-specific skills via find-skills / npx skills, generates a stack guide for this
   project, asks about anything it is not confident on, and seeds memory.
-metadata:
-  version: "0.2.0"
 ---
 
 # /foreman:map — build the project's context once, reuse it every run

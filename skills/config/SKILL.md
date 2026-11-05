@@ -5,8 +5,6 @@ description: >
   models", "set the reviewer to opus", "foreman settings", "turn off e2e in foreman",
   "how many fix iterations", or wants to see or change which model each foreman role uses,
   the test strategy, gate strictness, or worktree isolation.
-metadata:
-  version: "0.2.0"
 ---
 
 # /foreman:config — per-project settings
@@ -32,7 +30,7 @@ Settings live in `.foreman/config.json` (project, committed). A user-level defau
   "testStrategy": "targeted-then-full",
   "e2e": false,
   "worktrees": true,
-  "gates": { "enforce": true, "maxBlocks": 3 },
+  "gates": { "enforce": true, "maxBlocks": 3, "staleHours": 6 },
   "commands": {
     "build": null, "typecheck": null, "lint": null,
     "test": null, "testSubset": null, "testIntegration": null, "e2e": null,
@@ -64,7 +62,7 @@ Why these defaults: scouts only read and summarise (Haiku is plenty and cheap); 
    - Copy `${CLAUDE_PLUGIN_ROOT}/scripts/statusline.sh` and `${CLAUDE_PLUGIN_ROOT}/scripts/memory.mjs` to `~/.claude/foreman/` (so the path survives plugin updates), `chmod +x` the script.
    - Read `~/.claude/settings.json` (create `{}` if missing). If a `statusLine` already exists, show it and ask before replacing. Set:
      `"statusLine": { "type": "command", "command": "bash ~/.claude/foreman/statusline.sh" }`
-   - Tell the user it shows `⚒ foreman │ #id task │ build ● verify ◐ review ○ security ○ │ it n/max │ ctx % │ model` during a run and `⚒ foreman │ branch │ N open · M lessons │ ctx % │ model` otherwise, and that it appears on the next session (or after `/statusline` reload if available). `statusline off` removes the entry.
+   - Tell the user it shows `⚒ foreman │ branch │ N open · M lessons │ ctx % │ model` (plus the feature id during a run); the live gate rail and workers are shown by foreman's mod under the prompt, so the two don't repeat each other, and that it appears on the next session (or after `/statusline` reload if available). `statusline off` removes the entry.
 
 ## Notes for the lead
 
@@ -73,5 +71,5 @@ Why these defaults: scouts only read and summarise (Haiku is plenty and cheap); 
   - `targeted-then-full` (recommended): targeted on every iteration, full once at the end.
   - `targeted-only`: never run the full suite (fast feedback projects with slow suites; CI covers full).
   - `full-only`: full suite each iteration (small suites only).
-- `gates.enforce=false` turns the Stop hook into a reminder instead of a block.
+- `gates.enforce=false` turns the Stop hook into a reminder instead of a block. `gates.staleHours` (default 6): a run older than this, or owned by another session, is reported but not enforced, so a crashed session can't block later ones.
 - `memory.briefing=false` silences the SessionStart briefing; `memory.recallLimit` (default 10) caps recalled items injected into briefs.
