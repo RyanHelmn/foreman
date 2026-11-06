@@ -30,6 +30,9 @@ READ FIRST:
 PROJECT CONVENTIONS:
 <pasted from project-map: Conventions, relevant Design decisions>
 
+HOUSE PATTERNS (use these, never the legacy way; open the exemplar before writing similar code):
+<pasted lines from project-map House patterns for the concerns this unit touches, or "none mapped">
+
 LESSONS THAT APPLY (from memory):
 <pasted output of `memory relevant --paths <owned files>`, or "none">
 
@@ -75,9 +78,10 @@ RETURN: verifier output format. Never PASSED after a partial run.
 REQUIREMENTS: <numbered>
 DIFF: run `git diff <base>...HEAD` (or the pasted diff for a delta re-review)
 CONVENTIONS: <pasted from project-map>
+HOUSE PATTERNS: <pasted from project-map; new code using a legacy or third way is a should-fix, a blocker if it duplicates an existing helper>
 DESIGN DECISIONS: <pasted, incl. [user-confirmed]>
 PROJECT RULES: <pasted from .foreman/rules.md; a violation is a blocker>
-READ FIRST: <skills.json.reviewer paths>
+READ FIRST: <skills.json.reviewer paths>; .foreman/stack-guide.md (Design section)
 SCOPE: <"full change" | "delta only: files X, Y">
 RETURN: reviewer output format, ≤500 words
 ```

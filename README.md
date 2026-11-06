@@ -18,6 +18,8 @@ Design is distilled from Anthropic's published guidance (sources in `skills/orch
 /foreman:rules [add|remove]      project rules every Claude Code session and foreman worker follows
                                  (e.g. no new databases or containers, clean up worktrees)
 /foreman:check [code|security]   diff-level review and/or security audit on demand
+/foreman:tidy [paths]            remove dead code, align stragglers to the house patterns in verified batches,
+                                 plan bigger refactors into the backlog
 /foreman:recall <query>          search memory: features, decisions, lessons, backlog
 /foreman:research <question>     parallel Haiku scouts, compact answer
 /foreman:config                  models per role, test strategy, gates, worktrees, memory
@@ -57,7 +59,7 @@ node --no-warnings <plugin>/scripts/memory.mjs briefing | recall <q> | feature l
 
 ## Any stack
 
-`/foreman:map` identifies whatever is there (JS/TS, Python, Go, Rust, JVM, Ruby, PHP, .NET, mobile native, Expo/RN, Flutter, SQL/NoSQL, infra) and writes `.foreman/stack-guide.md` from the matching sections of `skills/map/references/stack-practices.md` and `stack-security.md` plus any skills it installs from the open ecosystem (`npx skills find` / `find-skills`). The guide is handed to every worker; installed skills are handed per role via `skills.json`.
+`/foreman:map` identifies whatever is there (JS/TS, Python, Go, Rust, JVM, Ruby, PHP, .NET, mobile native, Expo/RN, Flutter, SQL/NoSQL, infra) and writes `.foreman/stack-guide.md` from the matching sections of `skills/map/references/stack-practices.md` and `stack-security.md` plus any skills it installs from the open ecosystem (`npx skills find` / `find-skills`). The guide is handed to every worker; installed skills are handed per role via `skills.json`. The guide also carries `skills/map/references/design-principles.md` (composition and consistency rules for any language), and the map records one **house pattern** per concern (data access, errors, forms, state…) with an exemplar file, so implementers copy the right way, the reviewer flags a second way, and `/foreman:tidy` moves stragglers over.
 
 ## Token economy
 

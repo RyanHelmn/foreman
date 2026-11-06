@@ -31,7 +31,7 @@ Say which phase is starting in one line each. Never skip Phase 4.
 
 ## Phase 1 — Fingerprint (parallel scouts)
 
-Dispatch up to four `scout` agents (model `models.scout` from config if present, else `haiku`), one question each. Do not read the repo in the main context. Stacks are not assumed: scouts must identify whatever is there.
+Dispatch up to five `scout` agents (model `models.scout` from config if present, else `haiku`), one question each. Do not read the repo in the main context. Stacks are not assumed: scouts must identify whatever is there.
 
 Tell every scout to enumerate with `git ls-files` (falling back to `rg --files`, which honours `.gitignore`) and to stay out of dependency, build and cache directories (`node_modules`, `.venv`, `dist`, `.next`, `target`, `vendor`, …); only their *presence* is a signal. Lockfiles identify the package manager by name; never read them. The layout section of the map lists source directories only; generated and vendored paths go in one line under Conventions as "ignored".
 
@@ -39,14 +39,15 @@ Tell every scout to enumerate with `git ls-files` (falling back to `rg --files`,
 2. **Apps & frameworks** — per app/package: language, framework and version, routing style, UI/styling, data-fetching/state, API docs (OpenAPI/Swagger, GraphQL schema, tRPC), mobile (Expo/RN, Flutter, SwiftUI, Compose), desktop (Electron/Tauri), workers/queues.
 3. **Data & auth** — databases and ORMs/query builders, schema and migration location + command, caches/queues/search, auth library and session model, roles/tenancy, third-party integrations (payments, email, storage, commerce platforms, AI providers).
 4. **Quality commands** — exact commands for build, typecheck, lint, unit, integration, e2e; how to run a subset; what CI actually runs; approximate suite duration.
+5. **House patterns** — for each concern that exists here (data access, API calls, error handling, validation, config/env, logging, state, forms, UI components, styling, tests): how this codebase does it, with one exemplar `path` that shows it done well. Where a shared helper or module exists for a concern (an API client, a logger, an error wrapper), code that reimplements it instead of calling it is a second way, even if it looks similar. Where two or more ways coexist, list each with a file count and an example, and note which is newer (git log on the exemplars).
 
 ## Phase 2 — Write the project map (lead)
 
-Combine the briefs with `CLAUDE.md`, `README*`, `docs/`, ADRs, `CONTRIBUTING*`, and `git log --oneline -30`. Write `project-map.md` (≤1,500 words) with sections: **Summary · Stack (table) · Layout · Data · Auth & trust (incl. trust boundaries) · API surface · Commands · Conventions · Design decisions · Risk areas · Open questions**. Record the commit sha and date at the top.
+Combine the briefs with `CLAUDE.md`, `README*`, `docs/`, ADRs, `CONTRIBUTING*`, and `git log --oneline -30`. Write `project-map.md` (≤1,500 words) with sections: **Summary · Stack (table) · Layout · Data · Auth & trust (incl. trust boundaries) · API surface · Commands · Conventions · House patterns · Design decisions · Risk areas · Open questions**. House patterns is one line per concern: `<concern>: <the one way> · e.g. <exemplar path>`, plus `legacy: <the other way>` where a second way still exists. Record the commit sha and date at the top.
 
 ## Phase 3 — Stack guide and skills
 
-1. **Built-in sections**: `${CLAUDE_PLUGIN_ROOT}/skills/map/references/stack-practices.md` and `stack-security.md` are organised by ecosystem (generic principles first, then JS/TS, Python, Go, Rust, JVM, Ruby, PHP, .NET, mobile native, SQL/NoSQL, infra). Copy the **General** sections plus only the sections matching the detected stack into `.foreman/stack-guide.md`, under `## Practices` and `## Security`. Add a `## Project-specific` section with conventions observed in Phase 2 that the generic text doesn't cover.
+1. **Built-in sections**: `${CLAUDE_PLUGIN_ROOT}/skills/map/references/stack-practices.md` and `stack-security.md` are organised by ecosystem (generic principles first, then JS/TS, Python, Go, Rust, JVM, Ruby, PHP, .NET, mobile native, SQL/NoSQL, infra). Copy the **General** sections plus only the sections matching the detected stack into `.foreman/stack-guide.md`, under `## Practices` and `## Security`, and `${CLAUDE_PLUGIN_ROOT}/skills/map/references/design-principles.md` verbatim under `## Design`. Add a `## Project-specific` section with conventions observed in Phase 2 that the generic text doesn't cover.
 2. **Skill discovery**: if a `find-skills` skill is available, use it; else run `npx skills find <query>` directly (skip if `npx` is unavailable or offline). Queries: for each major technology, `<tech>` and `<tech> security`; plus `code review`, `security audit`, `testing <runner>`. Vet: prefer official orgs and well-known maintainers, high install counts, recent updates; read the SKILL.md source; reject anything that runs arbitrary commands or is marketing. Present a shortlist with AskUserQuestion (multiSelect) grouped by role (implementer / verifier / reviewer / security). Install chosen ones into the project: `npx skills add <owner/repo@skill> -y`. No `-g` unless asked.
 3. Write `skills.json`:
 
@@ -59,7 +60,7 @@ The guide is always passed to workers; installed skills are passed per role.
 
 ## Phase 4 — Confidence loop (mandatory)
 
-List every assumption the map rests on, tagged **high / medium / low**. Resolve every medium/low that affects planning, testing or security with AskUserQuestion: ≤4 questions per round, most consequential first, options drawn from scout evidence. Repeat until none remain or the user says proceed. Typical: which test command CI really runs; multi-tenant or not; deprecated modules; auth roles; migration process; whether foreman may ever run e2e; branching/PR conventions.
+List every assumption the map rests on, tagged **high / medium / low**. Resolve every medium/low that affects planning, testing or security with AskUserQuestion: ≤4 questions per round, most consequential first, options drawn from scout evidence. Repeat until none remain or the user says proceed. Always ask which way wins wherever two house patterns compete for one concern (options: each way, with its file count and exemplar). Typical: which test command CI really runs; multi-tenant or not; deprecated modules; auth roles; migration process; whether foreman may ever run e2e; branching/PR conventions.
 
 Record each answer twice: in `project-map.md › Design decisions` tagged `[user-confirmed]`, and in memory: `MEM decision add --text "..." --area <area> --source user --confirmed 1`. Later runs never re-ask a stored decision.
 
