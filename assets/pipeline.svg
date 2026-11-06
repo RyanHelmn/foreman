@@ -1,0 +1,84 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1400" height="420" viewBox="0 0 1400 420" role="img" aria-label="The /foreman:feature pipeline: recall, gather, confirm, plan, build in parallel worktrees, verify with a bounded fix loop, review, security, remember, feeding memory back into the next run">
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0 0L10 5L0 10z" fill="#64748b"/>
+    </marker>
+    <marker id="arrowAmber" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0 0L10 5L0 10z" fill="#f59e0b"/>
+    </marker>
+  </defs>
+  <rect width="1400" height="420" rx="20" fill="#0b0f17"/>
+
+  <g font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" text-anchor="middle">
+    <text x="700" y="62" font-size="24" font-weight="700" fill="#f8fafc">One run of <tspan font-family="ui-monospace, SFMono-Regular, Menlo, monospace" fill="#f59e0b">/foreman:feature</tspan></text>
+
+    <g stroke="#64748b" stroke-width="2" marker-end="url(#arrow)">
+      <line x1="168" y1="165" x2="188" y2="165"/>
+      <line x1="318" y1="165" x2="338" y2="165"/>
+      <line x1="468" y1="165" x2="488" y2="165"/>
+      <line x1="618" y1="165" x2="638" y2="165"/>
+      <line x1="768" y1="165" x2="788" y2="165"/>
+      <line x1="918" y1="165" x2="938" y2="165"/>
+      <line x1="1068" y1="165" x2="1088" y2="165"/>
+      <line x1="1218" y1="165" x2="1238" y2="165"/>
+    </g>
+
+    <g font-size="16" fill="#94a3b8">
+      <rect x="40" y="110" width="128" height="110" rx="14" fill="#111827" stroke="#334155"/>
+      <text x="104" y="150" font-size="26" fill="#f8fafc">↺</text>
+      <text x="104" y="178" font-size="18" font-weight="700" fill="#f8fafc">recall</text>
+      <text x="104" y="202">past lessons</text>
+
+      <rect x="190" y="110" width="128" height="110" rx="14" fill="#111827" stroke="#334155"/>
+      <text x="254" y="150" font-size="26" fill="#a78bfa">◇</text>
+      <text x="254" y="178" font-size="18" font-weight="700" fill="#f8fafc">gather</text>
+      <text x="254" y="202">haiku scouts</text>
+
+      <rect x="340" y="110" width="128" height="110" rx="14" fill="#111827" stroke="#334155"/>
+      <text x="404" y="150" font-size="26" fill="#f8fafc">?</text>
+      <text x="404" y="178" font-size="18" font-weight="700" fill="#f8fafc">confirm</text>
+      <text x="404" y="202">asks you</text>
+
+      <rect x="490" y="110" width="128" height="110" rx="14" fill="#111827" stroke="#334155"/>
+      <text x="554" y="150" font-size="26" fill="#f59e0b">⚒</text>
+      <text x="554" y="178" font-size="18" font-weight="700" fill="#f8fafc">plan</text>
+      <text x="554" y="202">lead</text>
+
+      <rect x="640" y="110" width="128" height="110" rx="14" fill="#111827" stroke="#334155"/>
+      <text x="704" y="140" font-size="18" font-weight="700" fill="#f8fafc"><tspan fill="#38bdf8">▣</tspan> build</text>
+      <rect x="660" y="152" width="88" height="14" rx="4" fill="#0c4a6e"/>
+      <rect x="660" y="171" width="88" height="14" rx="4" fill="#0c4a6e"/>
+      <rect x="660" y="190" width="88" height="14" rx="4" fill="#0c4a6e"/>
+      <text x="704" y="214" font-size="13">sonnet · worktrees</text>
+
+      <rect x="790" y="110" width="128" height="110" rx="14" fill="#111827" stroke="#f59e0b"/>
+      <text x="854" y="150" font-size="26" fill="#34d399">⚖</text>
+      <text x="854" y="178" font-size="18" font-weight="700" fill="#f8fafc">verify</text>
+      <text x="854" y="202">tests · lint</text>
+
+      <rect x="940" y="110" width="128" height="110" rx="14" fill="#111827" stroke="#f59e0b"/>
+      <text x="1004" y="150" font-size="26" fill="#34d399">◎</text>
+      <text x="1004" y="178" font-size="18" font-weight="700" fill="#f8fafc">review</text>
+      <text x="1004" y="202">opus, fresh eyes</text>
+
+      <rect x="1090" y="110" width="128" height="110" rx="14" fill="#111827" stroke="#f59e0b"/>
+      <text x="1154" y="150" font-size="26" fill="#34d399">⛨</text>
+      <text x="1154" y="178" font-size="18" font-weight="700" fill="#f8fafc">security</text>
+      <text x="1154" y="202">opus gate</text>
+
+      <rect x="1240" y="110" width="128" height="110" rx="14" fill="#111827" stroke="#334155"/>
+      <text x="1304" y="150" font-size="26" fill="#f8fafc">✎</text>
+      <text x="1304" y="178" font-size="18" font-weight="700" fill="#f8fafc">remember</text>
+      <text x="1304" y="202">0–5 lessons</text>
+    </g>
+
+    <path d="M854 222 C854 268 704 268 704 228" fill="none" stroke="#f59e0b" stroke-width="2" stroke-dasharray="6 5" marker-end="url(#arrowAmber)"/>
+    <text x="779" y="282" font-size="14" fill="#f59e0b">fix loop · max 3</text>
+    <text x="1004" y="250" font-size="14" fill="#f59e0b">gates run once per run</text>
+
+    <rect x="40" y="318" width="1328" height="64" rx="14" fill="#1c1408" stroke="#78350f"/>
+    <text x="704" y="357" font-size="17" fill="#fde68a"><tspan font-weight="700">.foreman/memory.db</tspan>  ·  features · lessons · decisions · backlog  ·  every run starts warmer than the last</text>
+    <path d="M1304 222 V316" stroke="#f59e0b" stroke-width="2" marker-end="url(#arrowAmber)"/>
+    <path d="M104 316 V224" stroke="#f59e0b" stroke-width="2" marker-end="url(#arrowAmber)"/>
+  </g>
+</svg>

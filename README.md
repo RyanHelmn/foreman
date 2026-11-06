@@ -1,6 +1,48 @@
-# foreman
+<p align="center">
+  <img src="assets/hero.svg" alt="foreman: tiered orchestration for Claude Code, with memory that compounds" width="100%">
+</p>
 
-Lightweight tiered orchestration for Claude Code, with project memory. One lead, cheap scouts, isolated implementers, three gates that run **once per run**, and a zero-dependency SQLite memory so every run starts warmer than the last.
+<p align="center">
+  <img alt="version" src="https://img.shields.io/badge/version-0.5.0-f59e0b?style=flat-square">
+  <img alt="Claude Code plugin" src="https://img.shields.io/badge/Claude%20Code-plugin-d97757?style=flat-square">
+  <img alt="any stack" src="https://img.shields.io/badge/stack-any-34d399?style=flat-square">
+  <img alt="zero dependencies" src="https://img.shields.io/badge/dependencies-0-38bdf8?style=flat-square">
+  <img alt="MIT" src="https://img.shields.io/badge/license-MIT-94a3b8?style=flat-square">
+</p>
+
+**Hand Claude Code a feature and get back verified, reviewed, security-checked work, plus a project memory that makes the next run faster.**
+
+foreman runs one lead with cheap scouts, isolated implementers, and three gates that run **once per run**, backed by a zero-dependency SQLite memory so every run starts warmer than the last.
+
+- **Right model for each job.** Haiku researches, Sonnet builds in parallel git worktrees, Opus reviews and runs the security gate.
+- **Nothing ships unchecked.** Tests, types and lint, then a fresh-eyes review, then a security pass. Fix loops are capped, so it can't spin forever.
+- **It learns your project.** Lessons, decisions and gotchas are stored after every run and handed to the next one.
+- **Any stack.** `/foreman:map` fingerprints JS/TS, Python, Go, Rust, JVM, Ruby, PHP, .NET, mobile, infra, and installs matching skills.
+- **Token-frugal.** Workers return summaries, not transcripts. Small tasks stay in the main loop.
+
+## Quick start
+
+1. Install the plugin. At the prompt of a Claude Code terminal session:
+
+   ```
+   /plugin install foreman --marketplace RyanHelmn/foreman
+   ```
+
+   Answer `y` to add the marketplace, then pick a scope (user is first). From a shell: `claude plugin install foreman --marketplace RyanHelmn/foreman`. In the desktop app: click + next to the prompt box → Plugins → Add marketplace `RyanHelmn/foreman` → Add plugin.
+2. In a project: `/foreman:map`. Commit `.foreman/`; it ships its own `.gitignore` that excludes `memory.db*` and `run.json`, so the map, stack guide, config, skills map, rules and `MEMORY.md` are committed and the live state isn't.
+3. Optional `/foreman:config` (e.g. `reviewer=claude-fable-5-1`, `e2e=true`; `--user` for global defaults).
+
+Then hand it work: `/foreman:feature add rate limiting to login`.
+
+## How a feature run works
+
+<p align="center">
+  <img src="assets/pipeline.svg" alt="recall, gather, confirm, plan, build in parallel worktrees, verify with a bounded fix loop, review, security, remember" width="100%">
+</p>
+
+<p align="center">
+  <img src="assets/terminal.svg" alt="Example foreman feature run in the Claude Code terminal" width="85%">
+</p>
 
 Design is distilled from Anthropic's published guidance (sources in `skills/orchestration-patterns/references/sources.md`): delegate only for context isolation, parallelism and independent judgement; split by context, not by role; verify with a fresh instance; bound every loop; fold everything else into the main agent.
 
@@ -68,21 +110,11 @@ node --no-warnings <plugin>/scripts/memory.mjs briefing | recall <q> | feature l
 - Workers return summaries, never transcripts. `maxFixIterations` (3) and `gates.maxBlocks` (3) cap every loop.
 - Tasks ≤2 files are done in the main loop.
 
-## Setup
+## Requirements
 
-1. Install the plugin. At the prompt of a Claude Code terminal session:
-
-   ```
-   /plugin install foreman --marketplace RyanHelmn/foreman
-   ```
-
-   Answer `y` to add the marketplace, then pick a scope (user is first). From a shell: `claude plugin install foreman --marketplace RyanHelmn/foreman`. In the desktop app: click + next to the prompt box → Plugins → Add marketplace `RyanHelmn/foreman` → Add plugin.
-2. In a project: `/foreman:map`. Commit `.foreman/`; it ships its own `.gitignore` that excludes `memory.db*` and `run.json`, so the map, stack guide, config, skills map, rules and `MEMORY.md` are committed and the live state isn't.
-3. Optional `/foreman:config` (e.g. `reviewer=claude-fable-5-1`, `e2e=true`; `--user` for global defaults).
+Claude Code with plugins, git (worktrees), Node ≥ 22.13 (built-in SQLite) for memory and the briefing hook; `npx` optional for skill discovery. No API keys, no native modules.
 
 Tests: `npm test` (Node's built-in runner, no dependencies) covers the stop gate and the memory CLI; the mod has its own `hooks/status.test.ts`.
-
-Requirements: Claude Code with plugins, git (worktrees), Node ≥ 22.13 (built-in SQLite) for memory and the briefing hook; `npx` optional for skill discovery. No API keys, no native modules.
 
 ## Customising
 

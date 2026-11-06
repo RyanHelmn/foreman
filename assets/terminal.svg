@@ -1,0 +1,37 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1000" height="600" viewBox="0 0 1000 600" role="img" aria-label="Example foreman feature run in the Claude Code terminal">
+  <rect width="1000" height="600" rx="16" fill="#0d1117" stroke="#30363d"/>
+  <rect width="1000" height="44" rx="16" fill="#161b22"/>
+  <rect y="28" width="1000" height="16" fill="#161b22"/>
+  <circle cx="26" cy="22" r="7" fill="#ff5f57"/>
+  <circle cx="50" cy="22" r="7" fill="#febc2e"/>
+  <circle cx="74" cy="22" r="7" fill="#28c840"/>
+  <text x="500" y="27" text-anchor="middle" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="13" fill="#8b949e">claude — ~/code/hobson</text>
+
+  <g font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="15" fill="#c9d1d9">
+    <text x="32" y="82"><tspan fill="#8b949e">&gt;</tspan> /foreman:feature add rate limiting to login</text>
+
+    <text x="32" y="120" font-weight="700" fill="#f8fafc"><tspan fill="#f59e0b">⚒ foreman</tspan> · feature #12 · add rate limiting to login</text>
+
+    <text x="32" y="154" font-weight="700" fill="#f8fafc"><tspan fill="#a78bfa">◇</tspan> gather <tspan font-weight="400" fill="#8b949e">· 3 scouts · 1 lesson recalled</tspan></text>
+    <text x="32" y="184" font-weight="700" fill="#f8fafc"><tspan fill="#38bdf8">▣</tspan> build <tspan font-weight="400" fill="#8b949e">· 2 implementers in worktrees</tspan></text>
+
+    <rect x="32" y="196" width="630" height="58" rx="6" fill="#161b22"/>
+    <text x="46" y="219"><tspan fill="#38bdf8">▣</tspan> throttle-guard<tspan x="226">apps/api/src/auth/throttle.guard.ts</tspan><tspan x="560" fill="#8b949e">sonnet</tspan><tspan x="630" fill="#34d399">●</tspan></text>
+    <text x="46" y="243"><tspan fill="#38bdf8">▣</tspan> throttle-config<tspan x="226">apps/api/src/config/throttle.ts</tspan><tspan x="560" fill="#8b949e">sonnet</tspan><tspan x="630" fill="#34d399">●</tspan></text>
+
+    <text x="32" y="288"><tspan fill="#34d399">⚖</tspan> <tspan font-weight="700" fill="#f8fafc">verify</tspan> <tspan fill="#f87171">✕</tspan> FAILED (targeted) · login-lockout · 1 fix dispatched</text>
+    <text x="32" y="316"><tspan fill="#34d399">⚖</tspan> <tspan font-weight="700" fill="#f8fafc">verify</tspan> <tspan fill="#34d399">●</tspan> PASSED · 42 passed · flipped: login-lockout <tspan fill="#f87171">✕</tspan>→<tspan fill="#34d399">●</tspan></text>
+    <text x="32" y="344"><tspan fill="#34d399">◎</tspan> <tspan font-weight="700" fill="#f8fafc">review</tspan> <tspan fill="#34d399">●</tspan> APPROVE · 0 blockers · 2 nits applied</text>
+    <text x="32" y="372"><tspan fill="#34d399">⛨</tspan> <tspan font-weight="700" fill="#f8fafc">security</tspan> <tspan fill="#34d399">●</tspan> PASS · stack checklist clean</text>
+
+    <rect x="32" y="392" width="936" height="152" rx="6" fill="#161b22"/>
+    <text x="46" y="418" fill="#f59e0b">⚒ foreman · feature #12 · done</text>
+    <text x="46" y="442"><tspan fill="#8b949e">built</tspan><tspan x="136">Throttler guard on /auth/login, 5/min per IP, tests added</tspan></text>
+    <text x="46" y="466"><tspan fill="#8b949e">files</tspan><tspan x="136">5 changed · apps/api/src/auth/**, config/throttle.ts</tspan></text>
+    <text x="46" y="490"><tspan fill="#8b949e">gates</tspan><tspan x="136">build <tspan fill="#34d399">●</tspan> verify <tspan fill="#34d399">●</tspan> review <tspan fill="#34d399">●</tspan> security <tspan fill="#34d399">●</tspan>  · it 2/3</tspan></text>
+    <text x="46" y="514"><tspan fill="#8b949e">lessons</tspan><tspan x="136">1 stored · ThrottlerGuard must come after AuthGuard</tspan></text>
+    <text x="46" y="538"><tspan fill="#8b949e">next</tspan><tspan x="136">open PR · /foreman:check security</tspan></text>
+
+    <text x="32" y="578" fill="#8b949e">main · memory 12 features · 14 lessons · ctx 38% · opus</text>
+  </g>
+</svg>
