@@ -430,7 +430,7 @@ const commands = {
     const backlog = db.prepare("SELECT paths FROM backlog WHERE status='open' AND severity IN ('critical','high')").all().filter((b) => touches(b.paths, q)).length;
     const gotchas = db.prepare("SELECT paths FROM lessons WHERE kind='gotcha'").all().filter((l) => touches(l.paths, q)).length;
     // score = 1 − 0.45·(1−firstPass) − 0.25·reviewChangeRate − min(0.2, 0.1·openCritHighBacklog) − min(0.1, 0.05·gotchas)
-    // unknown rates default to 0.5, so a repo with no evidence scores 0.65 (between askBelow and autoAt); every input only ever lowers the score
+    // unknown rates default to 0.5, so a repo with no evidence scores 0.65 (between askBelow and autoAt); monotone: more risk never raises it
     const contributors = [
       { factor: "first-pass", penalty: 0.45 * (1 - fp), detail: `${types.join(",") || "any type"} ${fp.toFixed(2)}${judged.length ? ` (${judged.length} local)` : " (no local data)"}` },
       { factor: "review changes", penalty: 0.25 * rc, detail: reviewed.size ? `${[...reviewed.values()].filter(Boolean).length}/${reviewed.size} reviews on these paths needed changes` : "no reviews on these paths" },
