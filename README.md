@@ -17,7 +17,7 @@ foreman runs one lead with cheap scouts, isolated implementers, and three gates 
 - **Right model for each job.** Haiku researches, Sonnet builds in parallel git worktrees, Opus reviews and runs the security gate.
 - **Nothing ships unchecked.** Tests, types and lint, then a fresh-eyes review, then a security pass. Fix loops are capped, so it can't spin forever.
 - **It learns your project.** Lessons, decisions and gotchas are stored after every run and handed to the next one.
-- **Any stack.** `/foreman:map` fingerprints JS/TS, Python, Go, Rust, JVM, Ruby, PHP, .NET, mobile, infra, and installs matching skills.
+- **Stack specialists at zero context cost.** 41 packs of checkable rules (NestJS, Next.js, Prisma, Expo, Rails, Go, Shopify…). `/foreman:map` picks the ones your project uses, and foreman's six agents become specialists for that stack only when a worker is dispatched; nothing loads at session start.
 - **Token-frugal.** Workers return summaries, not transcripts. Small tasks stay in the main loop.
 - **Gets cheaper and calmer with use.** Every run records what each worker cost and whether its work passed first time. foreman shows you the bill, learns which model handles each kind of task in your repo, and asks less on work with a clean track record.
 
