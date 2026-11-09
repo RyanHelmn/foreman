@@ -1,0 +1,89 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1400" height="480" viewBox="0 0 1400 480" role="img" aria-label="The evidence loop: every run records each worker call and gate, totals the cost by role, learns which model gets each task type right first time, and scores confidence; the next run uses that to pick models and decide how much to ask">
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0 0L10 5L0 10z" fill="#64748b"/>
+    </marker>
+    <marker id="arrowAmber" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0 0L10 5L0 10z" fill="#f59e0b"/>
+    </marker>
+  </defs>
+  <rect width="1400" height="480" rx="20" fill="#0b0f17"/>
+
+  <g font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" text-anchor="middle">
+    <text x="700" y="60" font-size="24" font-weight="700" fill="#f8fafc">Every run leaves <tspan fill="#f59e0b">evidence</tspan></text>
+    <text x="700" y="90" font-size="16" fill="#94a3b8">and the next run uses it to pick models and decide how much to ask</text>
+
+    <g stroke="#64748b" stroke-width="2" marker-end="url(#arrow)">
+      <line x1="338" y1="255" x2="380" y2="255"/>
+      <line x1="678" y1="255" x2="720" y2="255"/>
+      <line x1="1018" y1="255" x2="1060" y2="255"/>
+    </g>
+
+    <g fill="#111827" stroke="#334155">
+      <rect x="45" y="130" width="290" height="250" rx="14"/>
+      <rect x="385" y="130" width="290" height="250" rx="14"/>
+      <rect x="725" y="130" width="290" height="250" rx="14"/>
+      <rect x="1065" y="130" width="290" height="250" rx="14"/>
+    </g>
+
+    <g font-size="20" font-weight="700" fill="#f8fafc">
+      <text x="190" y="170"><tspan fill="#38bdf8">●</tspan> record</text>
+      <text x="530" y="170"><tspan fill="#f59e0b">£</tspan> cost</text>
+      <text x="870" y="170"><tspan fill="#a78bfa">⇄</tspan> route</text>
+      <text x="1210" y="170"><tspan fill="#34d399">◐</tspan> trust</text>
+    </g>
+    <g font-size="14" fill="#94a3b8">
+      <text x="190" y="194">every worker call and gate</text>
+      <text x="530" y="194">what this feature cost</text>
+      <text x="870" y="194">which model to use</text>
+      <text x="1210" y="194">how much to do unattended</text>
+    </g>
+
+    <g font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="13" fill="#cbd5e1" text-anchor="start">
+      <text x="65" y="234"><tspan fill="#38bdf8">▣</tspan><tspan x="87">sonnet</tspan><tspan x="148">api</tspan><tspan x="196" fill="#34d399">●</tspan> first-pass</text>
+      <text x="65" y="260"><tspan fill="#38bdf8">▣</tspan><tspan x="87">sonnet</tspan><tspan x="148">auth</tspan><tspan x="196" fill="#f87171">✕</tspan> reworked</text>
+      <text x="65" y="286"><tspan fill="#34d399">⚖</tspan><tspan x="87">verify</tspan><tspan x="148">FAILED · test-fail</tspan></text>
+      <text x="65" y="312"><tspan fill="#34d399">◎</tspan><tspan x="87">review</tspan><tspan x="148">APPROVE</tspan></text>
+      <text x="65" y="350" fill="#64748b">+ tokens · time · paths</text>
+
+      <text x="405" y="304">implementer</text>
+      <text x="405" y="324">reviewer</text>
+      <text x="405" y="344">verifier</text>
+      <text x="405" y="364">scout</text>
+
+      <text x="745" y="232" fill="#94a3b8">migration · first-pass here</text>
+      <text x="745" y="266" fill="#64748b">haiku<tspan x="810">0/0</tspan><tspan x="852">—</tspan></text>
+      <text x="745" y="294">sonnet<tspan x="810">2/7</tspan><tspan x="852" fill="#f87171">✕</tspan> below 80%</text>
+      <text x="745" y="322">opus<tspan x="810">7/7</tspan><tspan x="852" fill="#34d399">●</tspan> <tspan fill="#f59e0b" font-weight="700">picked</tspan></text>
+
+      <text x="1085" y="322"><tspan fill="#f87171">−0.23</tspan><tspan x="1140">first-pass</tspan><tspan x="1240" fill="#64748b">no data</tspan></text>
+      <text x="1085" y="344"><tspan fill="#f87171">−0.13</tspan><tspan x="1140">reviews</tspan><tspan x="1240" fill="#64748b">no data</tspan></text>
+      <text x="1085" y="366"><tspan fill="#64748b">−0.00</tspan><tspan x="1140">backlog</tspan><tspan x="1240" fill="#64748b">clear</tspan></text>
+    </g>
+
+    <text x="530" y="250" font-size="38" font-weight="700" fill="#f59e0b">£0.84</text>
+    <text x="530" y="276" font-size="14" fill="#94a3b8">182k tokens · estimated</text>
+    <g fill="#f59e0b">
+      <rect x="505" y="295" width="150" height="10" rx="3"/>
+      <rect x="505" y="315" width="94" height="10" rx="3" opacity="0.8"/>
+      <rect x="505" y="335" width="44" height="10" rx="3" opacity="0.6"/>
+      <rect x="505" y="355" width="25" height="10" rx="3" opacity="0.45"/>
+    </g>
+
+    <text x="870" y="360" font-size="13" fill="#94a3b8">cheapest model ≥ 80% with ≥ 5 runs</text>
+
+    <text x="1210" y="238" font-size="38" font-weight="700" fill="#f8fafc">0.65</text>
+    <rect x="1085" y="262" width="125" height="10" rx="3" fill="#f87171" opacity="0.55"/>
+    <rect x="1210" y="262" width="88" height="10" fill="#475569"/>
+    <rect x="1298" y="262" width="37" height="10" rx="3" fill="#34d399"/>
+    <path d="M1247 258l-6 -9h12z" fill="#f8fafc"/>
+    <g font-size="12" fill="#94a3b8">
+      <text x="1147" y="290">ask you</text>
+      <text x="1254" y="290">normal</text>
+      <text x="1316" y="290">auto</text>
+    </g>
+
+    <path d="M1210 380 V420 H190 V388" fill="none" stroke="#f59e0b" stroke-width="2" stroke-dasharray="6 6" marker-end="url(#arrowAmber)"/>
+    <text x="700" y="455" font-size="16" fill="#94a3b8"><tspan fill="#f59e0b" font-weight="700">next run</tspan> · models routed by evidence · questions scaled to confidence · lessons and costs in MEMORY.md</text>
+  </g>
+</svg>

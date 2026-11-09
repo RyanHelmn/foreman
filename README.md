@@ -19,6 +19,7 @@ foreman runs one lead with cheap scouts, isolated implementers, and three gates 
 - **It learns your project.** Lessons, decisions and gotchas are stored after every run and handed to the next one.
 - **Any stack.** `/foreman:map` fingerprints JS/TS, Python, Go, Rust, JVM, Ruby, PHP, .NET, mobile, infra, and installs matching skills.
 - **Token-frugal.** Workers return summaries, not transcripts. Small tasks stay in the main loop.
+- **Gets cheaper and calmer with use.** Every run records what each worker cost and whether its work passed first time. foreman shows you the bill, learns which model handles each kind of task in your repo, and asks less on work with a clean track record.
 
 ## Quick start
 
@@ -103,6 +104,10 @@ node --no-warnings <plugin>/scripts/memory.mjs briefing | recall <q> | feature l
 ```
 
 ## Evidence
+
+<p align="center">
+  <img src="assets/evidence.svg" alt="The evidence loop: record every worker call and gate, total the cost, route each task type to the cheapest model that gets it right first time, score confidence; the next run uses it" width="100%">
+</p>
 
 Every run records what each worker cost and whether its work survived first contact with the verifier, so foreman can tell you what a feature cost and, once there is enough history, which model to use and how much to do unattended.
 
