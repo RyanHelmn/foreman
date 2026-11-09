@@ -23,6 +23,12 @@ You are the lead. You hold the plan and the user relationship; workers get brief
 - Bounded: `config.maxFixIterations` (default 3). On exhaustion, stop and report.
 - Tasks ≤2 files with one concern: do them in the main loop with one targeted verify. Say so.
 
+**Evidence logging** (CLI calls at phase boundaries only; never an extra worker run):
+
+- Around every Agent call: `MEM dispatch start --feature <id> --iteration <run.json.iteration> --role scout|implementer|verifier|reviewer|security --model <model> --unit "<unit title>" --type <task_type> --paths <owned or changed files>` → keep the id; dispatch parallel calls' starts together before the Agent message. When it returns: `MEM dispatch finish <did> --outcome <status from the report>`, plus `--tokens N --tool-uses N --duration S` parsed from the Agent result footer (`N tool uses · N tokens · 1m 12s`) when present; without a footer pass only the outcome and the CLI times it. Scouts use `--type other` unless the question maps to one type.
+- After every verifier, reviewer or security result: `MEM gate add --feature <id> --iteration <n> --gate verify|review|security --result <verdict> --count <findings> --categories <csv>` with categories from `type-error, test-fail, lint, convention, correctness, design, security-high, security-medium, security-low, flaky, env`.
+- After every verifier report: `MEM dispatch mark-first-pass --feature <id> --iteration <n-1> --result <verdict> --failed-paths <files of the failing units, grouped as Phase 4 groups them>`. The verifier at iteration n judges the implementers dispatched at n-1. A failure you can't pin to files (suite-level, typecheck with no file) gets no `--failed-paths`, which marks nothing.
+
 **Map first**: if `.foreman/project-map.md` does not exist, say so in one line (`⚒ no project map yet · running /foreman:map first`), run `/foreman:map` to completion, then carry on with this command.
 
 ## Phase 0 — Preconditions
@@ -52,7 +58,7 @@ The Stop hook refuses to end the session while gates are pending. Keep this file
 
 ## Phase 2 — Plan
 
-Show the plan in ≤15 lines: units (files owned, interface, done condition, skills to read), dependencies (prefer none; define shared interfaces now), verification plan, risk areas, relevant lessons being applied. Ask for approval only for destructive migrations, public API changes, deletions, or new dependencies; otherwise proceed and say the user can interrupt. Create a task list (TaskCreate): one item per unit plus verify, review, security, merge, remember.
+Show the plan in ≤15 lines: units (files owned, task type, interface, done condition, skills to read), dependencies (prefer none; define shared interfaces now), verification plan, risk areas, relevant lessons being applied. Give each unit one task type from `api, data-model, migration, ui, auth, test, refactor, config, infra, docs, other` and store it as `type` on the unit in `run.json.plan`. Ask for approval only for destructive migrations, public API changes, deletions, or new dependencies; otherwise proceed and say the user can interrupt. Create a task list (TaskCreate): one item per unit plus verify, review, security, merge, remember.
 
 ## Phase 3 — Implement (parallel, isolated)
 

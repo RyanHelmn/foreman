@@ -89,7 +89,7 @@ Every command speaks one visual language (`skills/feature/references/style.md`) 
 
 ## Memory
 
-`.foreman/memory.db` holds four tables: **features** (what was built, outcome, iterations, what flipped, review/security verdicts), **lessons** (gotchas, conventions, patterns, process — tied to paths), **decisions** (`[user-confirmed]` answers from the confidence loops), **backlog** (ranked findings from `/foreman:review`). Full-text search across all of them.
+`.foreman/memory.db` holds **features** (what was built, outcome, iterations, what flipped, review/security verdicts), **lessons** (gotchas, conventions, patterns, process — tied to paths), **decisions** (`[user-confirmed]` answers from the confidence loops), **backlog** (ranked findings from `/foreman:review`), plus two append-only evidence tables: **dispatches** (every worker call: role, model, task type, paths, tokens, duration, outcome, first-pass) and **gate_events** (every verify/review/security verdict with finding categories). Full-text search across the first four; path matching is by path segment, so `auth` matches `auth/guard.ts` but not `author.ts`.
 
 Self-learning loop: `/foreman:feature` starts with `memory relevant` (lessons/decisions/backlog touching the task's paths and terms) and injects hits into worker briefs; it ends by storing the feature record and 0–5 specific lessons. `/foreman:review` writes the backlog; features close backlog items.
 

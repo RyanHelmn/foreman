@@ -20,6 +20,11 @@
 //   backlog update  <id> --status open|done|dismissed [--feature ID]
 //   recall          <query> [--limit N]      full-text search across everything
 //   relevant        [--paths p1,p2] [--text "..."] [--limit N]   lessons+decisions for a brief
+//   dispatch start  --feature ID --iteration N --role R --model M [--unit U] [--type T] [--paths ...]   -> prints id
+//   dispatch finish <id> --outcome O [--tokens N] [--tool-uses N] [--duration S] [--notes ...]
+//   dispatch list   [--feature ID]
+//   dispatch mark-first-pass --feature ID --iteration N --result PASSED|FAILED|INCONCLUSIVE [--failed-paths p1,p2]
+//   gate add        --feature ID --iteration N --gate verify|review|security --result R [--count N] [--categories ...]
 //   export                                  write .foreman/MEMORY.md (human-readable + JSON snapshot)
 //   import                                  rebuild db from .foreman/MEMORY.md
 //
@@ -84,8 +89,28 @@ CREATE TABLE IF NOT EXISTS backlog (
   id INTEGER PRIMARY KEY, area TEXT NOT NULL, severity TEXT NOT NULL, title TEXT NOT NULL, plan TEXT DEFAULT '', effort TEXT DEFAULT '',
   paths TEXT DEFAULT '', status TEXT DEFAULT 'open', feature_id INTEGER, created TEXT NOT NULL, updated TEXT NOT NULL
 );
+CREATE TABLE IF NOT EXISTS dispatches (
+  id INTEGER PRIMARY KEY, feature_id INTEGER NOT NULL, iteration INTEGER NOT NULL, role TEXT NOT NULL, model TEXT NOT NULL,
+  unit TEXT DEFAULT '', task_type TEXT DEFAULT 'other', paths TEXT DEFAULT '', started TEXT NOT NULL, finished TEXT,
+  duration_s INTEGER, tokens INTEGER, tool_uses INTEGER, outcome TEXT, first_pass INTEGER, notes TEXT DEFAULT ''
+);
+CREATE TABLE IF NOT EXISTS gate_events (
+  id INTEGER PRIMARY KEY, feature_id INTEGER NOT NULL, iteration INTEGER NOT NULL, gate TEXT NOT NULL, result TEXT NOT NULL,
+  finding_count INTEGER DEFAULT 0, categories TEXT DEFAULT '', created TEXT NOT NULL
+);
 CREATE VIRTUAL TABLE IF NOT EXISTS fts USING fts5(kind, ref_id UNINDEXED, title, body, paths, tokenize='trigram');
 `;
+
+const TASK_TYPES = ["api", "data-model", "migration", "ui", "auth", "test", "refactor", "config", "infra", "docs", "other"];
+const OUTCOMES = { scout: ["DONE"], implementer: ["DONE", "PARTIAL", "BLOCKED"], verifier: ["PASSED", "FAILED", "INCONCLUSIVE"], reviewer: ["APPROVE", "REQUEST_CHANGES"], security: ["PASS", "PASS_WITH_FINDINGS", "FAIL"] };
+const GATE_ROLE = { verify: "verifier", review: "reviewer", security: "security" };
+const CATEGORIES = ["type-error", "test-fail", "lint", "convention", "correctness", "design", "security-high", "security-medium", "security-low", "flaky", "env", "auto-applied"];
+const oneOf = (v, allowed, name) => { if (!allowed.includes(v)) die(`--${name} must be one of ${allowed.join("|")}${v === undefined || v === true ? "" : ` (got ${v})`}`); return v; };
+const int = (v, name) => { const n = Number(v); if (v === undefined || v === true || !Number.isInteger(n) || n < 0) die(`--${name} must be a whole number`); return n; };
+const optInt = (v, name) => (v === undefined ? null : int(v, name));
+const norm = (p) => p.trim().replace(/^\.\//, "").replace(/\/+$/, "");
+const overlaps = (a, b) => a === b || a.startsWith(b + "/") || b.startsWith(a + "/");
+const touches = (csv, queries) => queries.length > 0 && list(csv).map(norm).some((s) => queries.some((q) => overlaps(s, q)));
 
 const GITIGNORE = "# managed by foreman: local state only; the .md/.json files beside this are meant to be committed\nmemory.db\nmemory.db-*\nrun.json\n";
 function openDb() {
@@ -226,12 +251,9 @@ const commands = {
     const limit = Number(flags.limit ?? 10);
     const seen = new Set(); const hits = [];
     const push = (kind, id, line) => { const k = kind + id; if (!seen.has(k)) { seen.add(k); hits.push({ kind, id, line }); } };
-    // path matches: lessons/decisions/backlog whose paths share a prefix with any changed path (or its directory)
-    for (const p of paths) {
-      const dir = p.includes("/") ? p.slice(0, p.lastIndexOf("/")) : p;
-      for (const l of db.prepare("SELECT id,kind,text,paths FROM lessons WHERE paths LIKE ? OR paths LIKE ?").all(`%${p}%`, `%${dir}%`)) push("lesson", l.id, `[${l.kind}] ${l.text} (${l.paths})`);
-      for (const b of db.prepare("SELECT id,severity,title,paths FROM backlog WHERE status='open' AND (paths LIKE ? OR paths LIKE ?)").all(`%${p}%`, `%${dir}%`)) push("backlog", b.id, `[${b.severity}] ${b.title} (${b.paths})`);
-    }
+    const queries = paths.flatMap((p) => { const n = norm(p); return n.includes("/") ? [n, n.slice(0, n.lastIndexOf("/"))] : [n]; });
+    for (const l of db.prepare("SELECT id,kind,text,paths FROM lessons WHERE paths != ''").all()) if (touches(l.paths, queries)) push("lesson", l.id, `[${l.kind}] ${l.text} (${l.paths})`);
+    for (const b of db.prepare("SELECT id,severity,title,paths FROM backlog WHERE status='open' AND paths != ''").all()) if (touches(b.paths, queries)) push("backlog", b.id, `[${b.severity}] ${b.title} (${b.paths})`);
     if (text.trim()) {
       for (const r of db.prepare("SELECT kind, ref_id, title, body FROM fts WHERE fts MATCH ? AND kind IN ('lesson','decision','feature') ORDER BY bm25(fts) LIMIT ?").all(ftsQuery(text), limit)) {
         push(r.kind, r.ref_id, r.kind === "lesson" ? `[${r.title}] ${r.body}` : r.kind === "decision" ? r.body : `feature: ${r.title} — ${r.body.slice(0, 140)}`);
@@ -242,6 +264,56 @@ const commands = {
     out(top.map((h) => `${h.kind} #${h.id}: ${h.line}`).join("\n") || "(nothing relevant yet)", top);
   },
 
+  dispatch(db) {
+    if (sub === "start") {
+      const feature = int(flags.feature, "feature"), iteration = int(flags.iteration, "iteration");
+      const role = oneOf(flags.role, Object.keys(OUTCOMES), "role");
+      if (typeof flags.model !== "string") die("--model required");
+      const type = oneOf(flags.type ?? "other", TASK_TYPES, "type");
+      const r = db.prepare("INSERT INTO dispatches (feature_id,iteration,role,model,unit,task_type,paths,started) VALUES (?,?,?,?,?,?,?,?)")
+        .run(feature, iteration, role, flags.model, typeof flags.unit === "string" ? flags.unit : "", type, list(flags.paths).map(norm).join(","), now());
+      const id = Number(r.lastInsertRowid);
+      out(String(id), { id });
+    } else if (sub === "finish") {
+      const id = Number(rest[0]); if (!id) die("dispatch finish <id> --outcome O");
+      const d = db.prepare("SELECT * FROM dispatches WHERE id=?").get(id); if (!d) die("no dispatch " + id);
+      if (d.finished) die(`dispatch #${id} already finished`);
+      const outcome = oneOf(flags.outcome, OUTCOMES[d.role], "outcome");
+      const finished = now();
+      const duration = optInt(flags.duration, "duration") ?? Math.round((Date.parse(finished) - Date.parse(d.started)) / 1000);
+      db.prepare("UPDATE dispatches SET finished=?, duration_s=?, tokens=?, tool_uses=?, outcome=?, notes=? WHERE id=?")
+        .run(finished, duration, optInt(flags.tokens, "tokens"), optInt(flags["tool-uses"], "tool-uses"), outcome, typeof flags.notes === "string" ? flags.notes : "", id);
+      out(`dispatch #${id} ${outcome} · ${duration}s`, { id, outcome, duration_s: duration });
+    } else if (sub === "list") {
+      const rows = flags.feature ? db.prepare("SELECT * FROM dispatches WHERE feature_id=? ORDER BY id").all(int(flags.feature, "feature")) : db.prepare("SELECT * FROM dispatches ORDER BY id DESC LIMIT 50").all();
+      out(rows.map((r) => `${C.b}#${r.id}${C.r} f${r.feature_id} it${r.iteration} ${C.bl}${r.role.padEnd(11)}${C.r} ${r.model.padEnd(7)} ${C.mg}${r.task_type.padEnd(10)}${C.r} ${(r.outcome ?? "…").padEnd(8)}${r.first_pass === null ? "" : r.first_pass ? ` ${C.gr}first-pass${C.r}` : ` ${C.rd}reworked${C.r}`}${r.tokens ? ` ${C.gy}${r.tokens} tok${C.r}` : ""} ${r.unit}`).join("\n") || "(none)", rows);
+    } else if (sub === "mark-first-pass") {
+      const feature = int(flags.feature, "feature"), iteration = int(flags.iteration, "iteration");
+      const result = oneOf(flags.result, OUTCOMES.verifier, "result");
+      const failed = list(flags["failed-paths"]).map(norm);
+      const rows = db.prepare("SELECT id,paths FROM dispatches WHERE feature_id=? AND iteration=? AND role='implementer' AND first_pass IS NULL").all(feature, iteration);
+      // INCONCLUSIVE, or FAILED with no attributable paths, can't say which unit broke: leave every row unmarked
+      const marks = result === "PASSED" ? rows.map((r) => [r.id, 1]) : result === "FAILED" && failed.length ? rows.map((r) => [r.id, touches(r.paths, failed) ? 0 : 1]) : [];
+      const upd = db.prepare("UPDATE dispatches SET first_pass=? WHERE id=?");
+      for (const [id, v] of marks) upd.run(v, id);
+      const pass = marks.filter(([, v]) => v).length;
+      out(`marked ${marks.length} · ${pass} first-pass · ${marks.length - pass} reworked`, { marked: marks.length, firstPass: pass, reworked: marks.length - pass });
+    } else die("dispatch start|finish|list|mark-first-pass");
+  },
+
+  gate(db) {
+    if (sub !== "add") die("gate add --feature ID --iteration N --gate G --result R");
+    const feature = int(flags.feature, "feature"), iteration = int(flags.iteration, "iteration");
+    const gate = oneOf(flags.gate, Object.keys(GATE_ROLE), "gate");
+    const result = oneOf(flags.result, OUTCOMES[GATE_ROLE[gate]], "result");
+    const cats = list(flags.categories);
+    for (const c of cats) oneOf(c, CATEGORIES, "categories");
+    const r = db.prepare("INSERT INTO gate_events (feature_id,iteration,gate,result,finding_count,categories,created) VALUES (?,?,?,?,?,?,?)")
+      .run(feature, iteration, gate, result, optInt(flags.count, "count") ?? 0, cats.join(","), now());
+    const id = Number(r.lastInsertRowid);
+    out(String(id), { id });
+  },
+
   export(db, quiet = false) {
     const dump = {
       exported: now(),
@@ -249,6 +321,8 @@ const commands = {
       lessons: db.prepare("SELECT * FROM lessons ORDER BY id").all(),
       decisions: db.prepare("SELECT * FROM decisions ORDER BY id").all(),
       backlog: db.prepare("SELECT * FROM backlog ORDER BY id").all(),
+      dispatches: db.prepare("SELECT * FROM dispatches ORDER BY id").all(),
+      gate_events: db.prepare("SELECT * FROM gate_events ORDER BY id").all(),
     };
     const md = [];
     md.push("# foreman memory", "", `_Exported ${dump.exported}. Human-readable view; the JSON block at the end is the source of truth and rebuilds \`.foreman/memory.db\` on \`memory import\`._`, "");
@@ -269,13 +343,13 @@ function importFromMd(db) {
   const m = fs.readFileSync(MD_PATH, "utf8").match(/<!-- foreman:snapshot -->\s*```json\s*([\s\S]*?)```/);
   if (!m) return;
   let dump; try { dump = JSON.parse(m[1]); } catch { return; }
-  db.exec("DELETE FROM features; DELETE FROM lessons; DELETE FROM decisions; DELETE FROM backlog; DELETE FROM fts;");
+  db.exec("DELETE FROM features; DELETE FROM lessons; DELETE FROM decisions; DELETE FROM backlog; DELETE FROM dispatches; DELETE FROM gate_events; DELETE FROM fts;");
   const ins = (table, rows) => {
     for (const r of rows) {
       const cols = Object.keys(r); db.prepare(`INSERT INTO ${table} (${cols.join(",")}) VALUES (${cols.map(() => "?").join(",")})`).run(...cols.map((c) => r[c]));
     }
   };
-  ins("features", dump.features ?? []); ins("lessons", dump.lessons ?? []); ins("decisions", dump.decisions ?? []); ins("backlog", dump.backlog ?? []);
+  ins("features", dump.features ?? []); ins("lessons", dump.lessons ?? []); ins("decisions", dump.decisions ?? []); ins("backlog", dump.backlog ?? []); ins("dispatches", dump.dispatches ?? []); ins("gate_events", dump.gate_events ?? []);
   for (const f of dump.features ?? []) ftsUpsert(db, "feature", f.id, f.title, [f.summary, f.tags, f.flipped, f.review, f.security].filter(Boolean).join(" "), (f.files ?? "").replace(/,/g, " "));
   for (const l of dump.lessons ?? []) ftsUpsert(db, "lesson", l.id, l.kind, l.text, (l.paths ?? "").replace(/,/g, " "));
   for (const d of dump.decisions ?? []) ftsUpsert(db, "decision", d.id, d.area ?? "", d.text, "");
