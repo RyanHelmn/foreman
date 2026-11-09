@@ -1,0 +1,4 @@
+- [gotcha] Middleware/proxy matchers skip new routes and Server Action POSTs, so auth there is not an auth boundary; check the session where the data is read · paths: **/{middleware,proxy}.{ts,js}
+- [gotcha] From Next.js 15, params, searchParams, cookies() and headers() are async; synchronous access warns in dev and breaks in 16 · paths: **/app/**/*.tsx
+- [gotcha] error.tsx must be a client component ("use client"), or the build fails · paths: **/error.tsx
+- [gotcha] Closure variables are not part of an unstable_cache key; pass per-user values as arguments · paths: **/*.ts

@@ -1,0 +1,12 @@
+{
+  "name": "docker",
+  "prefix": "docker",
+  "layer": "library",
+  "version": "1.0.0",
+  "extends": [],
+  "detect": {
+    "deps": [],
+    "files": ["Dockerfile", "Dockerfile.*", "*.Dockerfile", "docker-compose.yml", "docker-compose.yaml", "compose.yml", "compose.yaml"],
+    "configKeys": []
+  }
+}

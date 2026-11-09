@@ -1,0 +1,12 @@
+{
+  "name": "sql",
+  "prefix": "sql",
+  "layer": "library",
+  "version": "1.0.0",
+  "extends": [],
+  "detect": {
+    "deps": ["mysql2", "mysql", "drizzle-orm", "kysely", "typeorm", "knex", "sequelize", "@mikro-orm/core", "sqlalchemy", "alembic", "pymysql", "mysqlclient", "gorm.io/gorm", "github.com/go-sql-driver/mysql", "sqlx", "diesel", "sea-orm"],
+    "files": [],
+    "configKeys": []
+  }
+}

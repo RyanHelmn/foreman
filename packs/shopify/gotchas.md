@@ -1,0 +1,5 @@
+- [gotcha] A global express.json() consumes the body before the webhook route, so HMAC verification fails on every request; mount express.raw on the webhook route first · paths: **/webhooks*
+- [gotcha] The default Prisma session storage keeps per-shop accessToken in plain text · paths: prisma/schema.prisma
+- [gotcha] Shopify retries a webhook not answered with 2xx within about five seconds, with the same X-Shopify-Webhook-Id; slow handlers cause duplicate processing · paths: app/routes/webhooks*
+- [gotcha] Admin GraphQL mutation failures arrive as userErrors with HTTP 200, not as thrown errors · paths: app/**
+- [gotcha] Liquid does not auto-escape {{ }} output; customer-entered values need | escape, or | json inside script tags · paths: **/*.liquid

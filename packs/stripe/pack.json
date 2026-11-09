@@ -1,0 +1,8 @@
+{
+  "name": "stripe",
+  "prefix": "stripe",
+  "layer": "library",
+  "version": "1.0.0",
+  "extends": [],
+  "detect": { "deps": ["stripe", "@stripe/stripe-js", "@stripe/react-stripe-js"], "files": [], "configKeys": [] }
+}

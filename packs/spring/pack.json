@@ -1,0 +1,8 @@
+{
+  "name": "spring",
+  "prefix": "spring",
+  "layer": "framework",
+  "version": "1.0.0",
+  "extends": ["jvm"],
+  "detect": { "deps": ["org.springframework.boot", "spring-boot-starter"], "files": [], "configKeys": [] }
+}

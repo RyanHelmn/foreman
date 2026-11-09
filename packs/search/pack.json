@@ -1,0 +1,12 @@
+{
+  "name": "search",
+  "prefix": "search",
+  "layer": "library",
+  "version": "1.0.0",
+  "extends": [],
+  "detect": {
+    "deps": ["@elastic/elasticsearch", "@opensearch-project/opensearch", "meilisearch", "typesense", "elasticsearch", "opensearch-py", "algoliasearch"],
+    "files": [],
+    "configKeys": []
+  }
+}

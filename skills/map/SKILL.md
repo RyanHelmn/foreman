@@ -5,8 +5,8 @@ description: >
   "set up foreman", "foreman init", "rebuild the project context", "refresh the project
   map", or when another foreman command finds no .foreman/project-map.md. It fingerprints
   the stack (any language or framework), maps the codebase, discovers and installs
-  stack-specific skills via find-skills / npx skills, generates a stack guide for this
-  project, asks about anything it is not confident on, and seeds memory.
+  stack-specific skills via find-skills / npx skills, selects stack packs and builds per-role
+  rules for this project, asks about anything it is not confident on, and seeds memory.
 ---
 
 # /foreman:map — build the project's context once, reuse it every run
@@ -18,9 +18,10 @@ Outputs, all in `.foreman/` at the project root:
 | File | Commit | Purpose |
 |---|---|---|
 | `project-map.md` | yes | What the project is, layout, data, auth/trust, commands, conventions, decisions, risk areas |
-| `stack-guide.md` | yes | Practices + security checklist tailored to *this* stack (built-in sections + installed skills) |
+| `stack-guide.md` | yes | Project-specific conventions the packs don't cover |
+| `roles/*.md` | yes | Stack rules per worker role, built from the selected packs (`scripts/packs.mjs build`) |
 | `config.json` | yes | Commands, models, test strategy, gates (`/foreman:config`) |
-| `skills.json` | yes | Which skill files each worker role reads first |
+| `skills.json` | yes | Selected packs, role files, and installed skill files per worker role |
 | `rules.md` | yes | Project rules every session and worker follows (`/foreman:rules`) |
 | `MEMORY.md` | yes | Human-readable export of memory; rebuilds `memory.db` |
 | `memory.db`, `run.json` | no | SQLite memory and live run state |
@@ -45,18 +46,23 @@ Tell every scout to enumerate with `git ls-files` (falling back to `rg --files`,
 
 Combine the briefs with `CLAUDE.md`, `README*`, `docs/`, ADRs, `CONTRIBUTING*`, and `git log --oneline -30`. Write `project-map.md` (≤1,500 words) with sections: **Summary · Stack (table) · Layout · Data · Auth & trust (incl. trust boundaries) · API surface · Commands · Conventions · House patterns · Design decisions · Risk areas · Open questions**. House patterns is one line per concern: `<concern>: <the one way> · e.g. <exemplar path>`, plus `legacy: <the other way>` where a second way still exists. Record the commit sha and date at the top.
 
-## Phase 3 — Stack guide and skills
+## Phase 3 — Packs, stack guide and skills
 
-1. **Built-in sections**: `${CLAUDE_PLUGIN_ROOT}/skills/map/references/stack-practices.md` and `stack-security.md` are organised by ecosystem (generic principles first, then JS/TS, Python, Go, Rust, JVM, Ruby, PHP, .NET, mobile native, SQL/NoSQL, infra). Copy the **General** sections plus only the sections matching the detected stack into `.foreman/stack-guide.md`, under `## Practices` and `## Security`, and `${CLAUDE_PLUGIN_ROOT}/skills/map/references/design-principles.md` verbatim under `## Design`. Add a `## Project-specific` section with conventions observed in Phase 2 that the generic text doesn't cover.
-2. **Skill discovery**: if a `find-skills` skill is available, use it; else run `npx skills find <query>` directly (skip if `npx` is unavailable or offline). Queries: for each major technology, `<tech>` and `<tech> security`; plus `code review`, `security audit`, `testing <runner>`. Vet: prefer official orgs and well-known maintainers, high install counts, recent updates; read the SKILL.md source; reject anything that runs arbitrary commands or is marketing. Present a shortlist with AskUserQuestion (multiSelect) grouped by role (implementer / verifier / reviewer / security). Install chosen ones into the project: `npx skills add <owner/repo@skill> -y`. No `-g` unless asked.
-3. Write `skills.json`:
+`PACKS` below means `node --no-warnings ${CLAUDE_PLUGIN_ROOT}/scripts/packs.mjs --root .`.
+
+1. **Detect packs**: `PACKS detect --json` matches the bundled packs (`${CLAUDE_PLUGIN_ROOT}/packs/`) against the repo's manifests and files, adds what they extend, and orders them `_general` → languages → frameworks → libraries. Compare with the scouts' stack findings: a detected pack for tech the project doesn't really use is dropped (a stray dependency; `swift`/`android` picked up by the generated native folders of a Flutter or React Native app); tech the scouts found that no pack covers is listed for step 2. Ask only if a call is unclear (AskUserQuestion, which packs to keep).
+2. **Skill discovery, only for tech no pack covers**: if a `find-skills` skill is available, use it; else run `npx skills find <query>` directly (skip if `npx` is unavailable or offline). Queries: `<tech>` and `<tech> security`. Vet: prefer official orgs and well-known maintainers, high install counts, recent updates; read the SKILL.md source; reject anything that runs arbitrary commands or is marketing. Present a shortlist with AskUserQuestion (multiSelect) grouped by role (implementer / verifier / reviewer / security). Install chosen ones into the project: `npx skills add <owner/repo@skill> -y`. No `-g` unless asked.
+3. Write `skills.json` with the installed skills per role:
 
 ```json
 { "implementer": [".claude/skills/<name>/SKILL.md"], "verifier": [], "reviewer": [], "security": [],
   "guide": ".foreman/stack-guide.md" }
 ```
 
-The guide is always passed to workers; installed skills are passed per role.
+4. **Build roles**: `PACKS build --packs <the confirmed list>`. It writes `.foreman/roles/{implementer,reviewer,security,verifier}.md` (each selected pack's role file plus the full text of the rules it names), adds `packs` and `roles` to `skills.json`, and imports the packs' seed gotchas as lessons once (a lesson the user deletes is never re-imported). Show the per-role word counts it prints.
+5. **Stack guide**: write `.foreman/stack-guide.md` with only `## Project-specific`: conventions observed in Phase 2 that the role files don't cover, and anything a selected pack says that this project deliberately does differently (the guide wins for this project).
+
+Workers get their role file, the guide and their installed skills. Nothing from a pack is loaded at session start.
 
 ## Phase 4 — Confidence loop (mandatory)
 
@@ -73,4 +79,4 @@ Record each answer twice: in `project-map.md › Design decisions` tagged `[user
 
 ## Re-running
 
-On a project that already has `.foreman/`: re-fingerprint, diff against the existing map, keep every `[user-confirmed]` decision and all memory, regenerate the stack guide, only ask about things that changed, and run `npx skills check` for skill updates. Use this whenever the context feels stale or after large refactors.
+On a project that already has `.foreman/`: re-fingerprint, diff against the existing map, keep every `[user-confirmed]` decision and all memory, re-run pack detection and `PACKS build` (a new stack picks up its pack; deleted gotchas stay deleted), refresh the stack guide, only ask about things that changed, and run `npx skills check` for skill updates. Use this whenever the context feels stale or after large refactors.

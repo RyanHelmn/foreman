@@ -1,0 +1,8 @@
+{
+  "name": "_general",
+  "prefix": "gen",
+  "layer": "general",
+  "version": "1.0.0",
+  "extends": [],
+  "detect": {}
+}

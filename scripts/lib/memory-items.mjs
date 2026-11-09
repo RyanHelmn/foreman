@@ -1,3 +1,4 @@
+import { createHash } from "node:crypto";
 import { ftsQuery, ftsUpsert } from "./db.mjs";
 import { exportMd } from "./export.mjs";
 import { fail, list, norm, now, touches } from "./util.mjs";
@@ -5,12 +6,31 @@ import { fail, list, norm, now, touches } from "./util.mjs";
 export function lessonAdd(db, a) {
   if (!a.text) fail("--text required");
   const kind = a.kind ?? "gotcha", paths = list(a.paths).join(",");
-  const r = db.prepare("INSERT INTO lessons (feature_id,kind,text,paths,created) VALUES (?,?,?,?,?)").run(a.feature ? Number(a.feature) : null, kind, a.text, paths, now());
+  const r = db.prepare("INSERT INTO lessons (feature_id,kind,text,paths,created,source) VALUES (?,?,?,?,?,?)").run(a.feature ? Number(a.feature) : null, kind, a.text, paths, now(), a.source ?? "");
   const id = Number(r.lastInsertRowid);
   ftsUpsert(db, "lesson", id, kind, a.text, paths.replace(/,/g, " "));
   return { id };
 }
-export const lessonList = (db, limit) => db.prepare("SELECT id,kind,text,paths,feature_id FROM lessons ORDER BY id DESC LIMIT ?").all(limit);
+export const lessonList = (db, limit) => db.prepare("SELECT id,kind,text,paths,feature_id,source FROM lessons ORDER BY id DESC LIMIT ?").all(limit);
+
+export function lessonDelete(db, id) {
+  if (!db.prepare("SELECT 1 FROM lessons WHERE id=?").get(id)) fail("no lesson " + id);
+  db.prepare("DELETE FROM lessons WHERE id=?").run(id);
+  db.prepare("DELETE FROM fts WHERE kind='lesson' AND ref_id=?").run(id);
+  return { id };
+}
+
+export function importGotchas(db, items) {
+  let imported = 0;
+  for (const { text, paths } of items) {
+    const key = "gotcha:" + createHash("sha1").update(text).digest("hex").slice(0, 16);
+    if (db.prepare("SELECT 1 FROM meta WHERE key=?").get(key)) continue;
+    lessonAdd(db, { text, kind: "gotcha", paths, source: "pack" });
+    db.prepare("INSERT INTO meta (key,value) VALUES (?,1)").run(key);
+    imported++;
+  }
+  return { imported, skipped: items.length - imported };
+}
 
 export function decisionAdd(db, a) {
   if (!a.text) fail("--text required");

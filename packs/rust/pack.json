@@ -1,0 +1,8 @@
+{
+  "name": "rust",
+  "prefix": "rs",
+  "layer": "language",
+  "version": "1.0.0",
+  "extends": [],
+  "detect": { "deps": [], "files": ["Cargo.toml"], "configKeys": [] }
+}

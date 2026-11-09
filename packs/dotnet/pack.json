@@ -1,0 +1,8 @@
+{
+  "name": "dotnet",
+  "prefix": "net",
+  "layer": "language",
+  "version": "1.0.0",
+  "extends": [],
+  "detect": { "deps": [], "files": ["*.csproj", "*.fsproj", "*.sln", "*.slnx", "global.json"], "configKeys": [] }
+}

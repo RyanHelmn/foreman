@@ -24,8 +24,9 @@ INTERFACE (build against this exactly):
 FILES YOU OWN: <list>  — do not edit anything else; report a BLOCKER instead
 
 READ FIRST:
+- .foreman/roles/implementer.md (stack rules for this project; apply every rule it names)
 - <.claude/skills/.../SKILL.md paths from skills.json.implementer>
-- .foreman/stack-guide.md
+- .foreman/stack-guide.md (project-specific conventions)
 
 PROJECT CONVENTIONS:
 <pasted from project-map: Conventions, relevant Design decisions>
@@ -67,7 +68,7 @@ COMMANDS:
 - typecheck: <cmd>
 - lint: <cmd>
 - e2e: <cmd>  (only if MODE includes e2e)
-READ FIRST: <skills.json.verifier paths, if any>
+READ FIRST: .foreman/roles/verifier.md (commands and false negatives for this stack); <skills.json.verifier paths, if any>
 ENVIRONMENT: use the services already running; never start new containers or databases; logs to $TMPDIR
 RETURN: verifier output format. Never PASSED after a partial run.
 ```
@@ -81,7 +82,7 @@ CONVENTIONS: <pasted from project-map>
 HOUSE PATTERNS: <pasted from project-map; new code using a legacy or third way is a should-fix, a blocker if it duplicates an existing helper>
 DESIGN DECISIONS: <pasted, incl. [user-confirmed]>
 PROJECT RULES: <pasted from .foreman/rules.md; a violation is a blocker>
-READ FIRST: <skills.json.reviewer paths>; .foreman/stack-guide.md (Design section)
+READ FIRST: .foreman/roles/reviewer.md (checklist; cite rule ids in findings); <skills.json.reviewer paths>; .foreman/stack-guide.md
 SCOPE: <"full change" | "delta only: files X, Y">
 RETURN: reviewer output format, ≤500 words
 ```
@@ -95,8 +96,9 @@ TRUST BOUNDARIES & AUTH MODEL: <pasted from project-map Auth & trust>
 RISK AREAS: <pasted>
 STACK: <one line>
 READ FIRST:
+- .foreman/roles/security.md (source → sink items for this stack)
 - <skills.json.security paths>
-- .foreman/stack-guide.md (Security section)
+- .foreman/stack-guide.md
 AUDIT COMMAND: <npm audit --omit=dev | pnpm audit | none>
 RETURN: security-auditor output format, ≤600 words
 ```

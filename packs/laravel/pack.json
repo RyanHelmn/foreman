@@ -1,0 +1,8 @@
+{
+  "name": "laravel",
+  "prefix": "lara",
+  "layer": "framework",
+  "version": "1.0.0",
+  "extends": ["php"],
+  "detect": { "deps": ["laravel/framework"], "files": ["artisan"], "configKeys": [] }
+}

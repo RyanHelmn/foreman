@@ -1,0 +1,8 @@
+{
+  "name": "react-query",
+  "prefix": "rq",
+  "layer": "library",
+  "version": "1.0.0",
+  "extends": [],
+  "detect": { "deps": ["@tanstack/react-query", "@tanstack/query-core", "swr"], "files": [], "configKeys": [] }
+}

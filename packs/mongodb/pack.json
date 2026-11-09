@@ -1,0 +1,8 @@
+{
+  "name": "mongodb",
+  "prefix": "mongo",
+  "layer": "library",
+  "version": "1.0.0",
+  "extends": [],
+  "detect": { "deps": ["mongodb", "mongoose", "pymongo", "motor"], "files": [], "configKeys": [] }
+}

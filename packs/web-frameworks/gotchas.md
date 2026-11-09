@@ -1,0 +1,3 @@
+- [gotcha] Remix/React Router loaders run in parallel and are fetchable individually, so a parent route's auth check does not protect child loaders · paths: **/routes/**
+- [gotcha] SvelteKit +server.ts endpoints and form actions do not run the layout's load, so auth in +layout.server.ts leaves them open · paths: **/src/routes/**
+- [gotcha] Everything a loader returns is serialised to the client, even fields the component never renders · paths: **/routes/**

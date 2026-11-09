@@ -1,0 +1,8 @@
+{
+  "name": "tailwind",
+  "prefix": "tw",
+  "layer": "library",
+  "version": "1.0.0",
+  "extends": [],
+  "detect": { "deps": ["tailwindcss", "@tailwindcss/postcss", "@tailwindcss/vite"], "files": ["tailwind.config.js", "tailwind.config.cjs", "tailwind.config.mjs", "tailwind.config.ts"], "configKeys": [] }
+}

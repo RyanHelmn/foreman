@@ -1,0 +1,8 @@
+{
+  "name": "ruby",
+  "prefix": "rb",
+  "layer": "language",
+  "version": "1.0.0",
+  "extends": [],
+  "detect": { "deps": [], "files": ["Gemfile", "*.gemspec"], "configKeys": [] }
+}

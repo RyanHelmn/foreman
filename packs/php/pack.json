@@ -1,0 +1,8 @@
+{
+  "name": "php",
+  "prefix": "php",
+  "layer": "language",
+  "version": "1.0.0",
+  "extends": [],
+  "detect": { "deps": [], "files": ["composer.json"], "configKeys": [] }
+}

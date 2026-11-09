@@ -1,0 +1,8 @@
+{
+  "name": "nestjs",
+  "prefix": "nest",
+  "layer": "framework",
+  "version": "1.0.0",
+  "extends": ["typescript", "node"],
+  "detect": { "deps": ["@nestjs/core"], "files": ["nest-cli.json"], "configKeys": [] }
+}

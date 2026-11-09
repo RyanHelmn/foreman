@@ -37,7 +37,7 @@ CREATE TABLE IF NOT EXISTS gate_events (
 CREATE TABLE IF NOT EXISTS meta (key TEXT PRIMARY KEY, value INTEGER NOT NULL);
 CREATE VIRTUAL TABLE IF NOT EXISTS fts USING fts5(kind, ref_id UNINDEXED, title, body, paths, tokenize='trigram');
 `;
-const ADDED = [["dispatches", "agent_id", "TEXT"], ["dispatches", "source", "TEXT DEFAULT 'lead'"], ["dispatches", "unattributed", "INTEGER DEFAULT 0"]];
+const ADDED = [["lessons", "source", "TEXT DEFAULT ''"], ["dispatches", "agent_id", "TEXT"], ["dispatches", "source", "TEXT DEFAULT 'lead'"], ["dispatches", "unattributed", "INTEGER DEFAULT 0"]];
 
 export function prepare(db) {
   db.exec(SCHEMA);

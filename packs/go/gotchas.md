@@ -1,0 +1,3 @@
+- [gotcha] Loop variables are per-iteration only when go.mod's go directive is 1.22 or later; below that, closures and goroutines in a loop share one variable · paths: **/*.go
+- [gotcha] gofmt -l exits 0 even when it lists unformatted files; check for empty output · paths: **/*.go
+- [gotcha] go test -run with a pattern matching nothing prints "no tests to run" and exits 0 · paths: **/*_test.go

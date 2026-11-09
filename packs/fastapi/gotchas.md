@@ -1,0 +1,2 @@
+- [gotcha] TestClient(app) without `with` does not run lifespan startup/shutdown; tests pass while the real app fails to boot · paths: **/tests/**
+- [gotcha] Router-level `dependencies=[Depends(x)]` runs x but discards its return value; endpoints that need the user still declare it as a parameter (it is cached per request) · paths: **/routers/**

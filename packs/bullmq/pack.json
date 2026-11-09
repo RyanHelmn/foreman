@@ -1,0 +1,8 @@
+{
+  "name": "bullmq",
+  "prefix": "bull",
+  "layer": "library",
+  "version": "1.0.0",
+  "extends": [],
+  "detect": { "deps": ["bullmq", "@nestjs/bullmq"], "files": [], "configKeys": [] }
+}

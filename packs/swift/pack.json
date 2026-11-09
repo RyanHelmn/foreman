@@ -1,0 +1,8 @@
+{
+  "name": "swift",
+  "prefix": "swift",
+  "layer": "framework",
+  "version": "1.0.0",
+  "extends": [],
+  "detect": { "deps": [], "files": ["Package.swift", "**/*.xcodeproj/project.pbxproj", "Podfile"], "configKeys": [] }
+}

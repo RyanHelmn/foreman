@@ -1,0 +1,12 @@
+{
+  "name": "monorepo",
+  "prefix": "mono",
+  "layer": "library",
+  "version": "1.0.0",
+  "extends": [],
+  "detect": {
+    "deps": [],
+    "files": ["pnpm-workspace.yaml", "turbo.json", "nx.json", "lerna.json"],
+    "configKeys": ["workspaces"]
+  }
+}

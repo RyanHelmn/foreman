@@ -1,0 +1,8 @@
+{
+  "name": "android",
+  "prefix": "android",
+  "layer": "framework",
+  "version": "1.0.0",
+  "extends": [],
+  "detect": { "deps": ["com.android.application"], "files": ["AndroidManifest.xml"], "configKeys": [] }
+}

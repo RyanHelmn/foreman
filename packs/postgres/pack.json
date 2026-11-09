@@ -1,0 +1,39 @@
+{
+  "name": "postgres",
+  "prefix": "pg",
+  "layer": "library",
+  "version": "1.0.0",
+  "extends": [
+    "sql"
+  ],
+  "detect": {
+    "deps": [
+      "pg",
+      "postgres",
+      "pg-promise",
+      "@neondatabase/serverless",
+      "@vercel/postgres",
+      "@prisma/adapter-pg",
+      "@prisma/adapter-neon",
+      "pgvector",
+      "psycopg",
+      "psycopg2",
+      "psycopg2-binary",
+      "asyncpg",
+      "github.com/jackc/pgx/v5",
+      "github.com/lib/pq"
+    ],
+    "files": [],
+    "configKeys": [],
+    "contains": [
+      {
+        "files": "**/schema.prisma",
+        "pattern": "provider\\s*=\\s*\"postgresql\""
+      },
+      {
+        "files": "**/prisma/schema/*.prisma",
+        "pattern": "provider\\s*=\\s*\"postgresql\""
+      }
+    ]
+  }
+}

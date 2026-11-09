@@ -1,0 +1,8 @@
+{
+  "name": "web-frameworks",
+  "prefix": "web",
+  "layer": "framework",
+  "version": "1.0.0",
+  "extends": ["typescript"],
+  "detect": { "deps": ["@remix-run/node", "@remix-run/react", "@remix-run/cloudflare", "@remix-run/dev", "@react-router/dev", "@sveltejs/kit", "nuxt", "astro"], "files": ["svelte.config.js", "svelte.config.ts", "nuxt.config.ts", "nuxt.config.js", "astro.config.mjs", "astro.config.ts", "react-router.config.ts"], "configKeys": [] }
+}

@@ -1,0 +1,3 @@
+- [gotcha] The OpenAI and Anthropic Node SDKs default to multi-minute timeouts with automatic retries; set timeout and maxRetries to fit the route · paths: **/*ai*
+- [gotcha] Filtering vector search results after topK returns few or zero chunks for small tenants; filter inside the query · paths: **/*retriev*
+- [gotcha] Markdown images in model output are fetched by the browser as soon as they render, which is how injected prompts exfiltrate data · paths: **/*.tsx

@@ -1,0 +1,8 @@
+{
+  "name": "nextjs",
+  "prefix": "next",
+  "layer": "framework",
+  "version": "1.0.0",
+  "extends": ["react", "typescript"],
+  "detect": { "deps": ["next"], "files": ["next.config.js", "next.config.mjs", "next.config.ts"], "configKeys": [] }
+}

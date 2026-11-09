@@ -1,0 +1,8 @@
+{
+  "name": "python",
+  "prefix": "py",
+  "layer": "language",
+  "version": "1.0.0",
+  "extends": [],
+  "detect": { "deps": [], "files": ["pyproject.toml", "requirements*.txt", "setup.py", "Pipfile"], "configKeys": [] }
+}

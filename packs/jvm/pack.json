@@ -1,0 +1,8 @@
+{
+  "name": "jvm",
+  "prefix": "jvm",
+  "layer": "language",
+  "version": "1.0.0",
+  "extends": [],
+  "detect": { "deps": [], "files": ["pom.xml", "build.gradle", "build.gradle.kts"], "configKeys": [] }
+}

@@ -1,0 +1,3 @@
+- [gotcha] Sidekiq retries a failed job up to 25 times by default, so any side effect before the failure point repeats · paths: app/jobs/**,app/workers/**
+- [gotcha] bin/rails test skips test/system; run bin/rails test:system separately · paths: test/system/**
+- [gotcha] remove_column inside change needs the column type or db:rollback raises IrreversibleMigration · paths: db/migrate/**

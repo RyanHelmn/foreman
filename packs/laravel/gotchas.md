@@ -1,0 +1,2 @@
+- [gotcha] env() returns null outside config/ once php artisan config:cache has run, which production deploys usually do · paths: app/**
+- [gotcha] A cached config in bootstrap/cache/config.php makes tests ignore phpunit.xml env values; php artisan config:clear before testing · paths: bootstrap/cache/**

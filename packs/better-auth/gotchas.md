@@ -1,0 +1,4 @@
+- [gotcha] A frontend on a different origin than baseURL gets 403 invalid origin until that exact origin is in trustedOrigins for that environment; preview deploys need their own entry · paths: **/auth.ts
+- [gotcha] getSessionCookie in Next.js middleware only checks the cookie exists; it does not validate the session, so pages and actions still need auth.api.getSession · paths: **/middleware.ts
+- [gotcha] In-memory rate limiting resets on every serverless cold start; set rateLimit.storage to database or secondary-storage · paths: **/auth.ts
+- [gotcha] Adding a better-auth plugin adds tables or columns; run npx @better-auth/cli generate and migrate or the plugin fails at runtime · paths: **/auth.ts

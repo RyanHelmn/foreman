@@ -1,0 +1,2 @@
+- [gotcha] On logout, clear the query cache and persisted stores as well as the session, or the next user on the device briefly sees the previous user's data · paths: **/*logout*
+- [gotcha] An effect that sets state from a prop runs after paint, so the first render shows the old value; compute it in render or reset with a key · paths: **/*.tsx

@@ -1,0 +1,12 @@
+{
+  "name": "node",
+  "prefix": "node",
+  "layer": "language",
+  "version": "1.0.0",
+  "extends": ["typescript"],
+  "detect": {
+    "deps": ["express", "fastify", "hono", "koa", "@trpc/server", "@apollo/server", "graphql-yoga", "mercurius"],
+    "files": [],
+    "configKeys": []
+  }
+}

@@ -4,11 +4,11 @@ import { ftsUpsert } from "./db.mjs";
 import { featureStats, statLine } from "./evidence.mjs";
 import { now } from "./util.mjs";
 
-const TABLES = ["features", "lessons", "decisions", "backlog", "dispatches", "gate_events"];
+const TABLES = ["features", "lessons", "decisions", "backlog", "dispatches", "gate_events", "meta"];
 
 export function exportMd(db, dir, prices) {
   const dump = { exported: now() };
-  for (const t of TABLES) dump[t] = db.prepare(`SELECT * FROM ${t} ORDER BY id`).all();
+  for (const t of TABLES) dump[t] = db.prepare(`SELECT * FROM ${t} ORDER BY rowid`).all();
   const md = [];
   md.push("# foreman memory", "", `_Exported ${dump.exported}. Human-readable view; the JSON block at the end is the source of truth and rebuilds \`.foreman/memory.db\` on \`memory import\`._`, "");
   md.push("## Decisions"); for (const d of dump.decisions) md.push(`- ${d.confirmed ? "✅" : "〰️"} ${d.area ? `**${d.area}** · ` : ""}${d.text}`); if (!dump.decisions.length) md.push("- (none)");

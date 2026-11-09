@@ -1,0 +1,3 @@
+- [gotcha] Default argument values are evaluated once at def time; `ts=datetime.now()` is the import time, `items=[]` is shared across calls · paths: **/*.py
+- [gotcha] pytest exits 5, not 0, when a node id or -k expression selects no tests · paths: **/test_*.py
+- [gotcha] Flask autoescapes only templates ending .html/.htm/.xml/.xhtml; a .j2 template rendered as HTML is unescaped · paths: **/templates/**

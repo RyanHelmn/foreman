@@ -1,0 +1,2 @@
+- [gotcha] Tailwind v4 has no tailwind.config by default; the theme lives in CSS under @theme, and classes inside node_modules packages need an @source line · paths: **/*.css
+- [gotcha] A class built with string interpolation works in dev while another file uses the same class, then disappears from production CSS when that file changes · paths: **/*.{tsx,jsx,vue,svelte}

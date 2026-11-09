@@ -1,0 +1,3 @@
+- [gotcha] serde's deny_unknown_fields is not supported together with #[serde(flatten)] on the same struct · paths: **/*.rs
+- [gotcha] sqlx query! macros need DATABASE_URL or SQLX_OFFLINE=true with a committed .sqlx/ cache; rerun `cargo sqlx prepare` after changing a query · paths: **/.sqlx/**
+- [gotcha] A std::sync::Mutex guard held across .await makes the future !Send and can deadlock the runtime; use tokio::sync::Mutex or drop the guard first · paths: **/*.rs

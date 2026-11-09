@@ -1,0 +1,8 @@
+{
+  "name": "electron",
+  "prefix": "electron",
+  "layer": "framework",
+  "version": "1.0.0",
+  "extends": ["typescript"],
+  "detect": { "deps": ["electron", "@tauri-apps/api", "tauri"], "files": ["tauri.conf.json", "**/src-tauri/tauri.conf.json"], "configKeys": [] }
+}

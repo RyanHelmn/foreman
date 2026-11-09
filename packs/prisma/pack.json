@@ -1,0 +1,8 @@
+{
+  "name": "prisma",
+  "prefix": "prisma",
+  "layer": "library",
+  "version": "1.0.0",
+  "extends": [],
+  "detect": { "deps": ["prisma", "@prisma/client"], "files": ["**/schema.prisma", "**/prisma/schema/*.prisma"], "configKeys": [] }
+}

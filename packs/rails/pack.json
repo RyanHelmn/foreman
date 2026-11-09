@@ -1,0 +1,8 @@
+{
+  "name": "rails",
+  "prefix": "rails",
+  "layer": "framework",
+  "version": "1.0.0",
+  "extends": ["ruby"],
+  "detect": { "deps": ["rails", "railties"], "files": ["config/application.rb", "bin/rails"], "configKeys": [] }
+}

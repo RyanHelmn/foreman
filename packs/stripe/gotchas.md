@@ -1,0 +1,3 @@
+- [gotcha] Next.js route handlers must pass await req.text() to constructEvent; req.json() and re-stringifying changes the bytes and fails verification · paths: **/webhook*
+- [gotcha] stripe listen issues its own whsec_ secret, different from the dashboard endpoint's secret · paths: **/.env*
+- [gotcha] Stripe delivers events out of order and retries for days; re-read the object before writing state · paths: **/webhook*

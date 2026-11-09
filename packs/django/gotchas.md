@@ -1,0 +1,3 @@
+- [gotcha] Django TestCase never fires transaction.on_commit callbacks unless wrapped in self.captureOnCommitCallbacks(execute=True) · paths: **/tests/**
+- [gotcha] DRF's default permission class is AllowAny; a new view without permission_classes is public unless DEFAULT_PERMISSION_CLASSES is set · paths: **/views*.py
+- [gotcha] pytest-django --reuse-db keeps the old schema after a migration change; rerun with --create-db · paths: **/migrations/**

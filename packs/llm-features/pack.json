@@ -1,0 +1,35 @@
+{
+  "name": "llm-features",
+  "prefix": "llm",
+  "layer": "library",
+  "version": "1.0.0",
+  "extends": [],
+  "detect": {
+    "deps": [
+      "ai",
+      "@anthropic-ai/sdk",
+      "openai",
+      "@ai-sdk/openai",
+      "@ai-sdk/anthropic",
+      "@ai-sdk/google",
+      "@ai-sdk/azure",
+      "@ai-sdk/amazon-bedrock",
+      "@ai-sdk/mistral",
+      "@ai-sdk/gateway",
+      "@ai-sdk/react",
+      "langchain",
+      "@langchain/core",
+      "llamaindex",
+      "llama-index",
+      "anthropic",
+      "@pinecone-database/pinecone",
+      "pinecone",
+      "weaviate-client",
+      "@qdrant/js-client-rest",
+      "qdrant-client",
+      "chromadb"
+    ],
+    "files": [],
+    "configKeys": []
+  }
+}

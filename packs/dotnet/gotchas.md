@@ -1,0 +1,2 @@
+- [gotcha] FromSqlRaw($"... {x}") is not parameterised; only FromSql/FromSqlInterpolated turn interpolation holes into parameters · paths: **/*.cs
+- [gotcha] dotnet test --filter that matches no tests exits 0, so a typo in the filter looks like a pass · paths: **/*Tests.csproj

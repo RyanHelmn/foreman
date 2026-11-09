@@ -1,0 +1,12 @@
+{
+  "name": "kubernetes",
+  "prefix": "k8s",
+  "layer": "library",
+  "version": "1.0.0",
+  "extends": [],
+  "detect": {
+    "deps": [],
+    "files": ["Chart.yaml", "kustomization.yaml", "skaffold.yaml", "helmfile.yaml", "k8s/**/*.yaml", "k8s/**/*.yml", "kubernetes/**/*.yaml", "kubernetes/**/*.yml"],
+    "configKeys": []
+  }
+}

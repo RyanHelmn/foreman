@@ -1,0 +1,2 @@
+- [gotcha] Gradle reports `:test UP-TO-DATE` when inputs are unchanged and runs nothing; use `--rerun-tasks` to force a real test run · paths: **/build.gradle*
+- [gotcha] Maven Surefire runs only `*Test`/`*Tests`/`Test*` classes; `*IT` classes run only under Failsafe (`mvn verify`) when the plugin is configured · paths: **/pom.xml

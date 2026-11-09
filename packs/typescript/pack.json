@@ -1,0 +1,8 @@
+{
+  "name": "typescript",
+  "prefix": "ts",
+  "layer": "language",
+  "version": "1.0.0",
+  "extends": [],
+  "detect": { "deps": ["typescript"], "files": ["tsconfig.json"], "configKeys": [] }
+}

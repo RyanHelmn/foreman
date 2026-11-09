@@ -1,0 +1,1 @@
+- [gotcha] Ruby regex ^ and $ match at line boundaries, so /^\d+$/ accepts "1\n<script>"; validate with \A and \z · paths: **/*.rb

@@ -1,0 +1,8 @@
+{
+  "name": "django",
+  "prefix": "dj",
+  "layer": "framework",
+  "version": "1.0.0",
+  "extends": ["python"],
+  "detect": { "deps": ["django"], "files": ["manage.py"], "configKeys": [] }
+}

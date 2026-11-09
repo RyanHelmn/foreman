@@ -13,6 +13,7 @@
 //   feature show    <id>
 //   lesson add      --text T [--kind gotcha|convention|pattern|process] [--feature ID] [--paths p1,p2]
 //   lesson list     [--limit N]
+//   lesson delete   <id>                     a pack gotcha deleted here is never re-imported
 //   decision add    --text T [--source user|docs|inferred] [--confirmed 0|1] [--area A]
 //   decision list
 //   backlog add     --title T --area security|performance|architecture|testing|dx|deps|product|other --severity critical|high|medium|low [--plan P] [--effort s|m|l] [--paths ...]
@@ -103,9 +104,10 @@ const commands = {
 
   lesson(db) {
     if (sub === "add") return id(mi.lessonAdd(db, flags));
-    if (sub !== "list") fail("lesson add|list");
+    if (sub === "delete") { const r = mi.lessonDelete(db, Number(rest[0])); exportMd(db, DIR, cfg().prices); return out(`lesson #${r.id} deleted`, r); }
+    if (sub !== "list") fail("lesson add|list|delete");
     const rows = mi.lessonList(db, Number(flags.limit ?? 30));
-    out(rows.map((r) => `${C.b}#${r.id}${C.r} ${C.mg}${r.kind}${C.r} ${r.text}${r.paths ? ` ${C.gy}(${r.paths})${C.r}` : ""}`).join("\n") || "(none)", rows);
+    out(rows.map((r) => `${C.b}#${r.id}${C.r} ${C.mg}${r.kind}${C.r} ${r.text}${r.paths ? ` ${C.gy}(${r.paths})${C.r}` : ""}${r.source ? ` ${C.dim}${r.source}${C.r}` : ""}`).join("\n") || "(none)", rows);
   },
 
   decision(db) {

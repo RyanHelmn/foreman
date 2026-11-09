@@ -1,0 +1,8 @@
+{
+  "name": "fastapi",
+  "prefix": "fapi",
+  "layer": "framework",
+  "version": "1.0.0",
+  "extends": ["python"],
+  "detect": { "deps": ["fastapi"], "files": [], "configKeys": [] }
+}

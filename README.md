@@ -3,7 +3,7 @@
 </p>
 
 <p align="center">
-  <img alt="version" src="https://img.shields.io/badge/version-0.7.0-f59e0b?style=flat-square">
+  <img alt="version" src="https://img.shields.io/badge/version-0.8.0-f59e0b?style=flat-square">
   <img alt="Claude Code plugin" src="https://img.shields.io/badge/Claude%20Code-plugin-d97757?style=flat-square">
   <img alt="any stack" src="https://img.shields.io/badge/stack-any-34d399?style=flat-square">
   <img alt="zero dependencies" src="https://img.shields.io/badge/dependencies-0-38bdf8?style=flat-square">
@@ -30,7 +30,7 @@ foreman runs one lead with cheap scouts, isolated implementers, and three gates 
    ```
 
    Answer `y` to add the marketplace, then pick a scope (user is first). From a shell: `claude plugin install foreman --marketplace RyanHelmn/foreman`. In the desktop app: click + next to the prompt box → Plugins → Add marketplace `RyanHelmn/foreman` → Add plugin.
-2. In a project: `/foreman:map`. Commit `.foreman/`; it ships its own `.gitignore` that excludes `memory.db*` and `run.json`, so the map, stack guide, config, skills map, rules and `MEMORY.md` are committed and the live state isn't.
+2. In a project: `/foreman:map`. Commit `.foreman/`; it ships its own `.gitignore` that excludes `memory.db*` and `run.json`, so the map, stack guide, role files, config, skills map, rules and `MEMORY.md` are committed and the live state isn't.
 3. Optional `/foreman:config` (e.g. `reviewer=claude-fable-5-1`, `e2e=true`; `--user` for global defaults).
 
 Then hand it work: `/foreman:feature add rate limiting to login`.
@@ -50,7 +50,7 @@ Design is distilled from Anthropic's published guidance (sources in `skills/orch
 ## Commands
 
 ```
-/foreman:map                     map the project (any stack), install stack skills, generate a stack guide,
+/foreman:map                     map the project (any stack), select stack packs, build per-role rules,
                                  ask until confident, seed memory — run first, re-run to rebuild context
 /foreman:feature <task>          recall → gather → ask → plan → build (parallel worktrees) → verify → fix loop
                                  → review → security → store lessons
@@ -77,12 +77,13 @@ Design is distilled from Anthropic's published guidance (sources in `skills/orch
 | `implementer` | One bounded unit in its own git worktree, ≤250-word report | Sonnet |
 | `verifier` | Black-box tests/typecheck/lint; `targeted` per iteration, `full` once; never passes a partial run | Sonnet |
 | `reviewer` | Independent diff review: correctness, fit, design, tests | Opus |
-| `security-auditor` | Source→sink security gate using the stack guide + installed security skills | Opus |
+| `security-auditor` | Source→sink security gate using the stack's security rules + installed security skills | Opus |
 | `auditor` | One-area whole-project audit (performance, architecture, testing, dx, deps, …) with plans | Opus |
 | `SessionStart` hook | ~10-line memory briefing in mapped projects (zero tokens: shell + node) | — |
 | `Stop` hook | Refuses to end a feature run while gates are pending; bounded; only in the owning session and within `gates.staleHours`; fails open | — |
 | `hooks/status.ts` | Live line under the prompt for any foreman command (workers for map/review/research, gate rail during a feature, toasts when a gate passes or fails), and context handling: past `context.compactAt` (default 60%) it compacts between turns during a feature run, or suggests `/clear` once a foreman command has finished; every compaction keeps the run's state. Also records every worker dispatch of a feature run in memory | — |
 | `scripts/memory.mjs` | SQLite memory CLI (`node:sqlite`, FTS5 trigram), no npm install, logic in `scripts/lib/`; also the evidence commands (`dispatch`, `gate`, `cost`, `routing`, `confidence`, `feature report`) | — |
+| `packs/` + `scripts/packs.mjs` | Stack rules per role (41 packs); `detect`, `build`, `lint`, `list` | — |
 | `priors.json` | Placeholder first-pass priors blended into routing and confidence | — |
 | `scripts/statusline.sh` | Coloured status line: branch, memory counts, context %, model (the mod shows the run); installed by `/foreman:config statusline` | — |
 
@@ -127,7 +128,7 @@ Two config groups drive it (`/foreman:config`):
 
 ## Any stack
 
-`/foreman:map` identifies whatever is there (JS/TS, Python, Go, Rust, JVM, Ruby, PHP, .NET, mobile native, Expo/RN, Flutter, SQL/NoSQL, infra) and writes `.foreman/stack-guide.md` from the matching sections of `skills/map/references/stack-practices.md` and `stack-security.md` plus any skills it installs from the open ecosystem (`npx skills find` / `find-skills`). The guide is handed to every worker; installed skills are handed per role via `skills.json`. The guide also carries `skills/map/references/design-principles.md` (composition and consistency rules for any language), and the map records one **house pattern** per concern (data access, errors, forms, state…) with an exemplar file, so implementers copy the right way, the reviewer flags a second way, and `/foreman:tidy` moves stragglers over.
+`/foreman:map` identifies whatever is there and selects **packs**: 41 bundled stacks (TypeScript, Node, NestJS, Next.js, React, React Query, Tailwind, Expo, Flutter, Swift, Android, Electron, Prisma, SQL, Postgres, Redis, BullMQ, MongoDB, search, better-auth, Shopify, Stripe, LLM features, Python, FastAPI, Django, Go, Rust, JVM, Spring, Ruby, Rails, PHP, Laravel, .NET, Docker, Kubernetes, GitHub Actions, monorepos and more), plus `_general` for every project. A pack is not an agent: it is a set of rules (one checkable claim each, with an Incorrect/Correct pair and an impact) and four role files saying which rules the implementer, reviewer, security auditor and verifier apply, with stack-specific deviation rules, commands and quirks to report. `scripts/packs.mjs build` concatenates the selected packs into `.foreman/roles/<role>.md`, so foreman's six agents become NestJS, Expo or Rails specialists only when a worker for that role is dispatched; nothing loads at session start. Pack gotchas are seeded into memory once (delete one with `memory lesson delete` and it stays deleted). Installed ecosystem skills (`npx skills find`) are proposed only for tech no pack covers, and the map records one **house pattern** per concern with an exemplar file, so implementers copy the right way, the reviewer flags a second way (citing the rule id), and `/foreman:tidy` moves stragglers over.
 
 ## Token economy
 
@@ -142,8 +143,8 @@ Claude Code with plugins, git (worktrees), Node ≥ 22.13 (built-in SQLite) for 
 
 `.claude-plugin/types/` is gitignored: Claude Code regenerates it when the plugin loads, so on a fresh clone your editor flags `tsconfig.json` until then.
 
-Tests: `npm test` (Node's built-in runner, no dependencies) covers the stop gate, the memory CLI and `scripts/lib/`; the mod has its own `hooks/status.test.ts` (`claude plugin test .`).
+Tests: `npm test` (Node's built-in runner, no dependencies) covers the stop gate, the memory CLI, `scripts/lib/` and pack lint, detection and build; the mod has its own `hooks/status.test.ts` (`claude plugin test .`).
 
 ## Customising
 
-Agent prompts live in `agents/`; the loop in `skills/feature/SKILL.md`; the knowledge in `skills/map/references/` and `skills/feature/references/`. Add your own stack section to the references and `/foreman:map` will pick it up on the next run.
+Agent prompts live in `agents/`; the loop in `skills/feature/SKILL.md`; stack knowledge in `packs/` (format and limits in `packs/_schema.md`, checked by `node scripts/packs.mjs lint`, which `npm test` runs). Add a pack folder and `/foreman:map` will pick it up on the next run.

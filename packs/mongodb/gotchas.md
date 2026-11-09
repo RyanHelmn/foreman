@@ -1,0 +1,2 @@
+- [gotcha] MongoDB transactions fail on a standalone server; local and test databases need a replica set (MongoMemoryReplSet in tests) · paths: **/*.test.*
+- [gotcha] An operation inside withTransaction without { session } runs outside the transaction and is not rolled back · paths: **/*.ts

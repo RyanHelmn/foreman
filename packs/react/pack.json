@@ -1,0 +1,8 @@
+{
+  "name": "react",
+  "prefix": "react",
+  "layer": "framework",
+  "version": "1.0.0",
+  "extends": ["typescript"],
+  "detect": { "deps": ["react", "react-dom"], "files": [], "configKeys": [] }
+}

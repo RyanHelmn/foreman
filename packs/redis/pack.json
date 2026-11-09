@@ -1,0 +1,8 @@
+{
+  "name": "redis",
+  "prefix": "redis",
+  "layer": "library",
+  "version": "1.0.0",
+  "extends": [],
+  "detect": { "deps": ["ioredis", "redis", "@upstash/redis", "github.com/redis/go-redis/v9"], "files": [], "configKeys": [] }
+}

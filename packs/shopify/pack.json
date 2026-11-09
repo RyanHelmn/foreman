@@ -1,0 +1,12 @@
+{
+  "name": "shopify",
+  "prefix": "shop",
+  "layer": "framework",
+  "version": "1.0.0",
+  "extends": [],
+  "detect": {
+    "deps": ["@shopify/shopify-api", "@shopify/shopify-app-remix", "@shopify/shopify-app-react-router", "@shopify/shopify-app-express"],
+    "files": ["shopify.app.toml", "shopify.app.*.toml", "layout/theme.liquid", "config/settings_schema.json"],
+    "configKeys": []
+  }
+}

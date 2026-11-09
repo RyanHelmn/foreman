@@ -1,0 +1,8 @@
+{
+  "name": "expo",
+  "prefix": "expo",
+  "layer": "framework",
+  "version": "1.0.0",
+  "extends": ["react", "typescript"],
+  "detect": { "deps": ["expo", "react-native"], "files": ["app.config.ts", "app.config.js", "eas.json"], "configKeys": [] }
+}

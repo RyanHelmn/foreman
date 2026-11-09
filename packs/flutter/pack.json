@@ -1,0 +1,8 @@
+{
+  "name": "flutter",
+  "prefix": "flutter",
+  "layer": "framework",
+  "version": "1.0.0",
+  "extends": [],
+  "detect": { "deps": [], "files": ["pubspec.yaml"], "configKeys": [] }
+}

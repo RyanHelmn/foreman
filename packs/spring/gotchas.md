@@ -1,0 +1,3 @@
+- [gotcha] @PreAuthorize does nothing without @EnableMethodSecurity on a @Configuration class; tests that mock the service will not notice · paths: **/*.java,**/*.kt
+- [gotcha] @Transactional on a method called from the same class is ignored because the call bypasses the Spring proxy · paths: **/*Service.java,**/*Service.kt
+- [gotcha] Kotlin constraint annotations need @field: (e.g. @field:NotBlank) or validation silently skips them · paths: **/*.kt

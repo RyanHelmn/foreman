@@ -21,7 +21,8 @@ export const now = () => new Date().toISOString();
 export const list = (v) => (typeof v === "string" && v.length ? v.split(",").map((s) => s.trim()).filter(Boolean) : []);
 export const norm = (p) => p.trim().replace(/^\.\//, "").replace(/\/+$/, "");
 export const overlaps = (a, b) => a === b || a.startsWith(b + "/") || b.startsWith(a + "/");
-export const touches = (csv, queries) => queries.length > 0 && list(csv).map(norm).some((s) => queries.some((q) => overlaps(s, q)));
+export const globRe = (glob) => new RegExp("(^|/)" + glob.replace(/[.+^${}()|[\]\\]/g, "\\$&").replace(/\*\*\//g, "\0").replace(/\*\*/g, ".*").replace(/\*/g, "[^/]*").replace(/\?/g, "[^/]").replace(/\0/g, "(?:.*/)?") + "$");
+export const touches = (csv, queries) => queries.length > 0 && list(csv).map(norm).some((s) => queries.some((q) => (s.includes("*") ? globRe(s).test(q) : overlaps(s, q))));
 
 export const fail = (msg) => { throw new Error(msg); };
 export const oneOf = (v, allowed, name) => { if (!allowed.includes(v)) fail(`--${name} must be one of ${allowed.join("|")}${v === undefined || v === true ? "" : ` (got ${v})`}`); return v; };

@@ -1,0 +1,8 @@
+{
+  "name": "better-auth",
+  "prefix": "bauth",
+  "layer": "library",
+  "version": "1.0.0",
+  "extends": [],
+  "detect": { "deps": ["better-auth"], "files": [], "configKeys": [] }
+}

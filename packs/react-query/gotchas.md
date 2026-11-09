@@ -1,0 +1,3 @@
+- [gotcha] Optimistic updates without onError rollback leave the UI showing the change after the server rejected it · paths: **/*.{ts,tsx}
+- [gotcha] Call queryClient.clear() on logout (and on user switch), or the next user sees cached responses from the previous session · paths: **/*.{ts,tsx}
+- [gotcha] fetch resolves on 4xx/5xx, so a queryFn that doesn't check res.ok caches the error body as successful data · paths: **/*.{ts,tsx}
