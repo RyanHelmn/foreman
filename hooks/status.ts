@@ -8,6 +8,7 @@ type Run = {
   iteration?: number
   changedFiles?: string[]
   gates?: Partial<Record<Gate, string>>
+  confidence?: { score?: number }
 }
 type Worker = Pick<AgentInfo, 'id' | 'type' | 'description' | 'status'>
 
@@ -32,7 +33,9 @@ export const line = (s: {
   if (s.run?.active) {
     const r = s.run
     const rail = [`build ${r.changedFiles?.length ? '●' : '○'}`, ...GATES.map(g => `${g} ${gate(r.gates?.[g])}`)]
+    const conf = r.confidence?.score
     return [`⚒ #${r.featureId ?? '?'} ${cut(r.task ?? '', 34)}`, rail.join(' '), `it ${r.iteration ?? 0}/${s.max}`]
+      .concat(typeof conf === 'number' ? [`conf ${conf.toFixed(2)}`] : [])
       .concat(running ? [`${running} running`] : [])
       .join(' · ')
   }

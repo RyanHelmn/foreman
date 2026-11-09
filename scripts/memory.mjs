@@ -29,6 +29,7 @@
 //   feature report  <id> [--json]            write .foreman/reports/<id>.md
 //   routing         [--type T] [--paths P]   first-pass evidence per task type × model
 //   routing suggest --role implementer --type T [--paths P]   cheapest model with enough evidence
+//   confidence      --types T,T --paths P    0–1 score for running a task unattended, with its top 3 contributors
 //   export                                  write .foreman/MEMORY.md (human-readable + JSON snapshot)
 //   import                                  rebuild db from .foreman/MEMORY.md
 //
@@ -407,6 +408,40 @@ const commands = {
     const pct = (v) => (v === null ? "—" : Math.round(v * 100) + "%");
     out((rows.length ? [`${C.dim}type        model    n    first-pass  iter  tokens${C.r}`] : []).concat(rows.map((r) =>
       `${C.mg}${r.type.padEnd(11)}${C.r} ${r.model.padEnd(8)} ${String(r.dispatches).padEnd(4)} ${(pct(r.firstPassRate) + (r.judged ? ` ${Math.round(r.firstPassRate * r.judged)}/${r.judged}` : "")).padEnd(11)} ${(r.meanIterations === null ? "—" : r.meanIterations.toFixed(1)).padEnd(5)} ${r.meanTokens === null ? "—" : ktok(Math.round(r.meanTokens))}`)).join("\n") || "(no implementer dispatches yet)", rows);
+  },
+
+  confidence(db) {
+    const cfg = loadConfig();
+    const types = list(flags.types);
+    for (const t of types) oneOf(t, TASK_TYPES, "types");
+    const q = list(flags.paths).map(norm);
+    const priors = loadPriors();
+    const model = aliasOf(cfg.models?.implementer ?? DEFAULTS.models.implementer, cfg.prices);
+    const judged = judgedRows(db, "implementer", types, []).filter((r) => r.first_pass !== null);
+    const prior = (types.length ? types : ["*"]).map((t) => priorFor(priors, "implementer", t, model)).reduce((a, p) => ({ pass: a.pass + p.rate * p.n, n: a.n + p.n }), { pass: 0, n: 0 });
+    const fpN = judged.length + prior.n;
+    const fp = fpN ? (judged.filter((r) => r.first_pass).length + prior.pass) / fpN : 0.5;
+    const reviewed = new Map();
+    for (const g of db.prepare("SELECT g.feature_id, g.result, g.categories, f.files FROM gate_events g JOIN features f ON f.id=g.feature_id WHERE g.gate='review'").all()) {
+      if (!touches(g.files, q)) continue;
+      reviewed.set(g.feature_id, (reviewed.get(g.feature_id) ?? false) || g.result === "REQUEST_CHANGES" || list(g.categories).includes("auto-applied"));
+    }
+    const rc = reviewed.size ? [...reviewed.values()].filter(Boolean).length / reviewed.size : 0.5;
+    const backlog = db.prepare("SELECT paths FROM backlog WHERE status='open' AND severity IN ('critical','high')").all().filter((b) => touches(b.paths, q)).length;
+    const gotchas = db.prepare("SELECT paths FROM lessons WHERE kind='gotcha'").all().filter((l) => touches(l.paths, q)).length;
+    // score = 1 − 0.45·(1−firstPass) − 0.25·reviewChangeRate − min(0.2, 0.1·openCritHighBacklog) − min(0.1, 0.05·gotchas)
+    // unknown rates default to 0.5, so a repo with no evidence scores 0.65 (between askBelow and autoAt); every input only ever lowers the score
+    const contributors = [
+      { factor: "first-pass", penalty: 0.45 * (1 - fp), detail: `${types.join(",") || "any type"} ${fp.toFixed(2)}${judged.length ? ` (${judged.length} local)` : " (no local data)"}` },
+      { factor: "review changes", penalty: 0.25 * rc, detail: reviewed.size ? `${[...reviewed.values()].filter(Boolean).length}/${reviewed.size} reviews on these paths needed changes` : "no reviews on these paths" },
+      { factor: "backlog", penalty: Math.min(0.2, 0.1 * backlog), detail: `${backlog} open critical/high on these paths` },
+      { factor: "gotchas", penalty: Math.min(0.1, 0.05 * gotchas), detail: `${gotchas} gotcha lesson${gotchas === 1 ? "" : "s"} on these paths` },
+    ].sort((a, b) => b.penalty - a.penalty);
+    const score = Math.max(0, Math.min(1, 1 - contributors.reduce((a, c) => a + c.penalty, 0)));
+    const top = contributors.slice(0, 3).map((c) => ({ ...c, penalty: Math.round(c.penalty * 100) / 100 }));
+    const band = score >= cfg.autonomy.autoAt ? "auto" : score < cfg.autonomy.askBelow ? "ask" : "normal";
+    out([`confidence ${C.b}${score.toFixed(2)}${C.r} ${C.dim}(${band})${C.r}`, ...top.map((c) => `  ${C.rd}−${c.penalty.toFixed(2)}${C.r} ${c.factor.padEnd(14)} ${C.gy}${c.detail}${C.r}`)].join("\n"),
+      { score: Math.round(score * 100) / 100, band, contributors: top });
   },
 
   dispatch(db) {

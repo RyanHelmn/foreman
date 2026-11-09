@@ -19,6 +19,13 @@ test('a feature run shows the gate rail, iteration and running workers', () => {
   )
 })
 
+test('a feature run shows its confidence score once computed', () => {
+  const run = { active: true, task: 'billing webhooks', featureId: 3, iteration: 0, confidence: { score: 0.7 } }
+  expect(line({ run, max: 3, workers: [], isIdle: true })).toBe(
+    '⚒ #3 billing webhooks · build ○ verify ○ review ○ security ○ · it 0/3 · conf 0.70',
+  )
+})
+
 test('any foreman command shows its workers, last four', () => {
   const workers = [
     w('scout', 'completed', 'a'),

@@ -42,7 +42,7 @@ One bold line, optionally a short `·` detail. Then the content of that phase in
 
 ## Gate rail (end of any phase that changed it)
 
-`build ● · verify ◐ · review ○ · security ○`  it 1/3 · 4 calls
+`build ● · verify ◐ · review ○ · security ○`  it 1/3 · 4 calls · conf 0.72
 
 ## Roster (plan and build; fenced block)
 

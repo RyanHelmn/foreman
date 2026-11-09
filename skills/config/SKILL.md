@@ -45,7 +45,8 @@ Settings live in `.foreman/config.json` (project, committed). A user-level defau
     "opus":   { "perMTok": 5.6,  "currency": "GBP" },
     "fable":  { "perMTok": 14,   "currency": "GBP" }
   },
-  "routing": { "mode": "static", "threshold": 0.8, "minSamples": 5 }
+  "routing": { "mode": "static", "threshold": 0.8, "minSamples": 5 },
+  "autonomy": { "autoAt": 0.85, "askBelow": 0.5 }
 }
 ```
 
@@ -55,6 +56,9 @@ Settings live in `.foreman/config.json` (project, committed). A user-level defau
 
 `routing`: how `/foreman:feature` picks each implementer's model. `static` (recommended until you have evidence) always uses `models.implementer`. `evidence` asks `memory routing suggest` per unit: the cheapest model (by `prices`) whose first-pass rate for that task type in this repo is at least `threshold`, with at least `minSamples` judged dispatches here; otherwise `models.implementer`, labelled "insufficient evidence (n=N)". Local rates are blended with the plugin's `priors.json` as if each prior row were `n` extra samples, but only local samples count toward `minSamples`. The SessionStart briefing suggests switching once 10 finished features have dispatch records. `routing=evidence` / `routing=static` set the mode directly.
 
+`autonomy`: how much `/foreman:feature` does without asking, set by the run's confidence score (`memory confidence`, computed after Phase 1 and shown on the gate rail). At or above `autoAt` it skips plan approval for non-destructive work and applies reviewer should-fixes tagged `convention`/`lint` on files it already changed, checked once with `commands.testSubset` + `commands.typecheck` (not without a `testSubset`). Below `askBelow` it always stops after the plan and shows what lowered the score. In between it behaves as it always has.
+The score is `1 − 0.45·(1 − first-pass rate) − 0.25·(share of reviews on these paths that needed changes) − min(0.2, 0.1·open critical/high backlog items on these paths) − min(0.1, 0.05·gotcha lessons on these paths)`. A rate with no data counts as 0.5, so **a fresh repo scores 0.65**: in the middle band, with current behaviour, until evidence moves it. Evidence can raise it toward 1; risks only lower it.
+
 `worktrees`: `true` isolates implementers in git worktrees only when two or more run at once, and removes each one as soon as it is merged; `false` never uses worktrees.
 
 Model values are the aliases the Agent tool accepts (`haiku`, `sonnet`, `opus`, `inherit`) or a full model id such as `claude-fable-5-1`. `inherit` means "whatever the main session runs on".
@@ -63,9 +67,9 @@ Why these defaults: scouts only read and summarise (Haiku is plenty and cheap); 
 
 ## Behaviour
 
-1. **No arguments**: read the effective config (merge defaults ← user ← project), show it as a short table with a `(recommended)` tag on values that match defaults, and ask with AskUserQuestion which group to change: models, test strategy & e2e, gates, worktrees, commands, prices, routing. Offer the recommended value as the first option in every question.
+1. **No arguments**: read the effective config (merge defaults ← user ← project), show it as a short table with a `(recommended)` tag on values that match defaults, and ask with AskUserQuestion which group to change: models, test strategy & e2e, gates, worktrees, commands, prices, routing, autonomy. Offer the recommended value as the first option in every question.
 2. **With arguments** like `reviewer=opus e2e=true maxFixIterations=2`: apply them directly.
-3. Validate: model names must be aliases or `claude-` ids; `maxFixIterations` 1–5; `testStrategy` one of `targeted-then-full`, `full-only`, `targeted-only`; `gates.maxBlocks` 1–10; `prices.*.perMTok` a number ≥ 0 and `currency` a 3-letter code; `routing.mode` `static` or `evidence`, `routing.threshold` 0–1, `routing.minSamples` ≥ 1.
+3. Validate: model names must be aliases or `claude-` ids; `maxFixIterations` 1–5; `testStrategy` one of `targeted-then-full`, `full-only`, `targeted-only`; `gates.maxBlocks` 1–10; `prices.*.perMTok` a number ≥ 0 and `currency` a 3-letter code; `routing.mode` `static` or `evidence`, `routing.threshold` 0–1, `routing.minSamples` ≥ 1; `autonomy.askBelow` < `autonomy.autoAt`, both 0–1.
 4. If `commands.*` are null and a project map exists, fill them from `.foreman/project-map.md` `## Commands` and confirm.
 5. Write the file (create `.foreman/` if missing), then show the final effective config and one line on what changed.
 6. `--user` flag (or "make this my default for all projects"): write to `~/.claude/foreman.json` instead.

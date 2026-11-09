@@ -178,3 +178,25 @@ test("briefing suggests evidence routing once 10 finished features have dispatch
   assert.doesNotMatch(b(), /routing=evidence/);
   fs.rmSync(path.join(root, ".foreman", "config.json"));
 });
+
+test("confidence starts at 0.65 with no evidence and only goes down with risk", () => {
+  const fresh = fs.mkdtempSync(path.join(os.tmpdir(), "foreman-conf-"));
+  const run = (...a) => JSON.parse(execFileSync("node", ["--no-warnings", script, "--root", fresh, ...a, "--json"], { encoding: "utf8" }));
+  const c0 = run("confidence", "--types", "api", "--paths", "src/billing");
+  assert.equal(c0.score, 0.65);
+  assert.equal(c0.band, "normal");
+  assert.equal(c0.contributors.length, 3);
+  run("lesson", "add", "--kind", "gotcha", "--text", "Stripe amounts are in pence", "--paths", "src/billing");
+  run("lesson", "add", "--kind", "gotcha", "--text", "unrelated", "--paths", "src/billingx");
+  run("backlog", "add", "--title", "Webhook not verified", "--area", "security", "--severity", "critical", "--paths", "src/billing/webhook.ts");
+  const c1 = run("confidence", "--types", "api", "--paths", "src/billing/webhook.ts");
+  assert.equal(c1.score, 0.5);
+  const { id } = run("feature", "start", "--title", "billing", "--files", "src/billing/webhook.ts");
+  run("gate", "add", "--feature", String(id), "--iteration", "1", "--gate", "review", "--result", "APPROVE");
+  run("gate", "add", "--feature", String(id), "--iteration", "1", "--gate", "review", "--result", "APPROVE", "--count", "2", "--categories", "auto-applied,convention");
+  const c2 = run("confidence", "--types", "api", "--paths", "src/billing/webhook.ts");
+  assert.equal(c2.score, 0.38);
+  assert.equal(c2.band, "ask");
+  assert.equal(c2.contributors[0].factor, "review changes");
+  memFail("confidence", "--types", "frontend", "--paths", "x");
+});
