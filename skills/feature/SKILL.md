@@ -58,7 +58,7 @@ The Stop hook refuses to end the session while gates are pending. Keep this file
 
 ## Phase 2 — Plan
 
-Show the plan in ≤15 lines: units (files owned, task type, interface, done condition, skills to read), dependencies (prefer none; define shared interfaces now), verification plan, risk areas, relevant lessons being applied. Give each unit one task type from `api, data-model, migration, ui, auth, test, refactor, config, infra, docs, other` and store it as `type` on the unit in `run.json.plan`. Ask for approval only for destructive migrations, public API changes, deletions, or new dependencies; otherwise proceed and say the user can interrupt. Create a task list (TaskCreate): one item per unit plus verify, review, security, merge, remember.
+Show the plan in ≤15 lines: units (files owned, task type, interface, done condition, skills to read), dependencies (prefer none; define shared interfaces now), verification plan, risk areas, relevant lessons being applied. Give each unit one task type from `api, data-model, migration, ui, auth, test, refactor, config, infra, docs, other` and store it as `type` on the unit in `run.json.plan`. Implementer model: with `config.routing.mode = "evidence"`, run `MEM routing suggest --role implementer --type <type> --paths <unit files>` per unit and use its model, showing the basis in the plan (`implementer: opus (sonnet first-pass on migration 2/7 here)`); in `static` mode (default) use `models.implementer` as before. Ask for approval only for destructive migrations, public API changes, deletions, or new dependencies; otherwise proceed and say the user can interrupt. Create a task list (TaskCreate): one item per unit plus verify, review, security, merge, remember.
 
 ## Phase 3 — Implement (parallel, isolated)
 

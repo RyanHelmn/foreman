@@ -44,13 +44,16 @@ Settings live in `.foreman/config.json` (project, committed). A user-level defau
     "sonnet": { "perMTok": 2.8,  "currency": "GBP" },
     "opus":   { "perMTok": 5.6,  "currency": "GBP" },
     "fable":  { "perMTok": 14,   "currency": "GBP" }
-  }
+  },
+  "routing": { "mode": "static", "threshold": 0.8, "minSamples": 5 }
 }
 ```
 
 `context.compactAt`: the context % at which foreman acts: during an active feature run it compacts between turns (keeping the run's state); after a foreman command has finished it suggests `/clear` in the status line instead. Other sessions are left to Claude Code. `false` turns it off.
 
 `prices`: a blended price per million tokens for each model, used only for the estimates in `memory cost`, `feature list`, `feature report` and `MEMORY.md`. Keys are model aliases or full ids; a dispatch whose model is a full id (`claude-sonnet-5-5`) falls back to the alias it contains. The defaults are list prices (Nov 2026) blended at about 80% input / 20% output and converted to GBP. **Edit them** for your currency, plan, or cache-heavy usage; foreman doesn't split input from output.
+
+`routing`: how `/foreman:feature` picks each implementer's model. `static` (recommended until you have evidence) always uses `models.implementer`. `evidence` asks `memory routing suggest` per unit: the cheapest model (by `prices`) whose first-pass rate for that task type in this repo is at least `threshold`, with at least `minSamples` judged dispatches here; otherwise `models.implementer`, labelled "insufficient evidence (n=N)". Local rates are blended with the plugin's `priors.json` as if each prior row were `n` extra samples, but only local samples count toward `minSamples`. The SessionStart briefing suggests switching once 10 finished features have dispatch records. `routing=evidence` / `routing=static` set the mode directly.
 
 `worktrees`: `true` isolates implementers in git worktrees only when two or more run at once, and removes each one as soon as it is merged; `false` never uses worktrees.
 
@@ -60,9 +63,9 @@ Why these defaults: scouts only read and summarise (Haiku is plenty and cheap); 
 
 ## Behaviour
 
-1. **No arguments**: read the effective config (merge defaults ← user ← project), show it as a short table with a `(recommended)` tag on values that match defaults, and ask with AskUserQuestion which group to change: models, test strategy & e2e, gates, worktrees, commands, prices. Offer the recommended value as the first option in every question.
+1. **No arguments**: read the effective config (merge defaults ← user ← project), show it as a short table with a `(recommended)` tag on values that match defaults, and ask with AskUserQuestion which group to change: models, test strategy & e2e, gates, worktrees, commands, prices, routing. Offer the recommended value as the first option in every question.
 2. **With arguments** like `reviewer=opus e2e=true maxFixIterations=2`: apply them directly.
-3. Validate: model names must be aliases or `claude-` ids; `maxFixIterations` 1–5; `testStrategy` one of `targeted-then-full`, `full-only`, `targeted-only`; `gates.maxBlocks` 1–10; `prices.*.perMTok` a number ≥ 0 and `currency` a 3-letter code.
+3. Validate: model names must be aliases or `claude-` ids; `maxFixIterations` 1–5; `testStrategy` one of `targeted-then-full`, `full-only`, `targeted-only`; `gates.maxBlocks` 1–10; `prices.*.perMTok` a number ≥ 0 and `currency` a 3-letter code; `routing.mode` `static` or `evidence`, `routing.threshold` 0–1, `routing.minSamples` ≥ 1.
 4. If `commands.*` are null and a project map exists, fill them from `.foreman/project-map.md` `## Commands` and confirm.
 5. Write the file (create `.foreman/` if missing), then show the final effective config and one line on what changed.
 6. `--user` flag (or "make this my default for all projects"): write to `~/.claude/foreman.json` instead.

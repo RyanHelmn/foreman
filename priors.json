@@ -1,0 +1,10 @@
+{
+  "note": "Placeholder first-pass priors, blended into memory routing/confidence as if they were n extra local samples at the given rate. Neutral (0.5) until there is published data; replace or extend rows per role, task type (or * for any) and model alias.",
+  "version": 1,
+  "rows": [
+    { "role": "implementer", "type": "*", "model": "haiku", "rate": 0.5, "n": 2 },
+    { "role": "implementer", "type": "*", "model": "sonnet", "rate": 0.5, "n": 2 },
+    { "role": "implementer", "type": "*", "model": "opus", "rate": 0.5, "n": 2 },
+    { "role": "implementer", "type": "docs", "model": "haiku", "rate": 0.5, "n": 2 }
+  ]
+}

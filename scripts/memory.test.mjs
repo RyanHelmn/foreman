@@ -140,3 +140,41 @@ test("cost splits by role and iteration and names the priciest dispatch", () => 
   mem("export");
   assert.match(fs.readFileSync(path.join(root, ".foreman", "MEMORY.md"), "utf8"), /2\.5M tok £9\.80/);
 });
+
+test("routing reports first-pass by type and model, and suggest needs evidence", () => {
+  const { id: fid } = memJson("feature", "start", "--title", "Routing evidence");
+  const run = (model, type, pass, n) => {
+    for (let i = 0; i < n; i++) {
+      const { id } = memJson("dispatch", "start", "--feature", String(fid), "--iteration", "0", "--role", "implementer", "--model", model, "--type", type, "--paths", `db/m${model}${i}.sql`);
+      mem("dispatch", "finish", String(id), "--outcome", "DONE");
+    }
+    const failed = Array.from({ length: n - pass }, (_, i) => `db/m${model}${i}.sql`).join(",");
+    mem("dispatch", "mark-first-pass", "--feature", String(fid), "--iteration", "0", "--result", failed ? "FAILED" : "PASSED", ...(failed ? ["--failed-paths", failed] : []));
+  };
+  const suggest = () => memJson("routing", "suggest", "--role", "implementer", "--type", "migration");
+  assert.deepEqual([suggest().model, suggest().basis], ["sonnet", "insufficient evidence (n=0)"]);
+  run("sonnet", "migration", 2, 7);
+  run("opus", "migration", 7, 7);
+  const table = memJson("routing", "--type", "migration");
+  assert.deepEqual(table.map((r) => [r.model, r.dispatches, r.judged]), [["opus", 7, 7], ["sonnet", 7, 7]]);
+  assert.ok(Math.abs(table[1].firstPassRate - 2 / 7) < 1e-9);
+  const s = suggest();
+  assert.equal(s.model, "opus");
+  assert.equal(s.basis, "sonnet first-pass on migration 2/7 here");
+  assert.equal(memJson("routing", "suggest", "--role", "implementer", "--type", "migration", "--paths", "src").basis, "insufficient evidence (n=0)");
+  memFail("routing", "suggest", "--type", "frontend");
+});
+
+test("briefing suggests evidence routing once 10 finished features have dispatches", () => {
+  const b = () => mem("briefing", "--no-color");
+  assert.doesNotMatch(b(), /routing=evidence/);
+  for (let i = 0; i < 10; i++) {
+    const { id } = memJson("feature", "start", "--title", "f" + i);
+    mem("dispatch", "start", "--feature", String(id), "--iteration", "0", "--role", "scout", "--model", "haiku");
+    mem("feature", "finish", String(id), "--outcome", "done");
+  }
+  assert.match(b(), /routing=evidence/);
+  fs.writeFileSync(path.join(root, ".foreman", "config.json"), JSON.stringify({ routing: { mode: "evidence" } }));
+  assert.doesNotMatch(b(), /routing=evidence/);
+  fs.rmSync(path.join(root, ".foreman", "config.json"));
+});

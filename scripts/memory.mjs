@@ -27,6 +27,8 @@
 //   gate add        --feature ID --iteration N --gate verify|review|security --result R [--count N] [--categories ...]
 //   cost            <feature_id>             tokens and estimated cost by role and iteration
 //   feature report  <id> [--json]            write .foreman/reports/<id>.md
+//   routing         [--type T] [--paths P]   first-pass evidence per task type × model
+//   routing suggest --role implementer --type T [--paths P]   cheapest model with enough evidence
 //   export                                  write .foreman/MEMORY.md (human-readable + JSON snapshot)
 //   import                                  rebuild db from .foreman/MEMORY.md
 //
@@ -129,6 +131,17 @@ function loadConfig() {
   return cfg;
 }
 const priceOf = (model, prices) => prices[model] ?? Object.entries(prices).find(([k]) => model.includes(k))?.[1] ?? null;
+const aliasOf = (model, prices) => (prices[model] ? model : Object.keys(prices).find((k) => model.includes(k)) ?? model);
+function loadPriors() {
+  try { return JSON.parse(fs.readFileSync(new URL("../priors.json", import.meta.url), "utf8")).rows ?? []; } catch { return []; }
+}
+const priorFor = (priors, role, type, model) => priors.find((p) => p.role === role && p.type === type && p.model === model) ?? priors.find((p) => p.role === role && p.type === "*" && p.model === model) ?? { rate: 0, n: 0 };
+const blend = (pass, n, prior) => (n + prior.n ? (pass + prior.rate * prior.n) / (n + prior.n) : null);
+function judgedRows(db, role, types, paths) {
+  const q = paths.map(norm);
+  return db.prepare("SELECT d.*, f.iterations AS feature_iterations FROM dispatches d LEFT JOIN features f ON f.id = d.feature_id WHERE d.role=?").all(role)
+    .filter((r) => (!types.length || types.includes(r.task_type)) && (!q.length || touches(r.paths, q)));
+}
 const SYM = { GBP: "£", USD: "$", EUR: "€" };
 const money = (n, cur) => (SYM[cur] ?? (cur ? cur + " " : "")) + n.toFixed(2);
 const ktok = (n) => (n >= 1e6 ? (n / 1e6).toFixed(1) + "M" : n >= 1e3 ? Math.round(n / 1e3) + "k" : String(n));
@@ -196,6 +209,10 @@ const commands = {
     if (feats.length) lines.push(`  ${C.dim}recent${C.r}       ` + feats.filter((f) => f.outcome !== "in_progress").map((f) => `#${f.id} ${st(f.outcome)} ${f.title}`).join(" · "));
     lines.push(`  ${C.dim}backlog${C.r}      ${open} open (${crit} critical/high) · lessons ${lessons}`);
     for (const l of recentLessons) lines.push(`  ${C.gy}·${C.r} ${C.mg}${l.kind.padEnd(10)}${C.r} ${l.text.slice(0, 100)}`);
+    if (loadConfig().routing.mode === "static") {
+      const ev = db.prepare("SELECT COUNT(DISTINCT f.id) n FROM features f JOIN dispatches d ON d.feature_id=f.id WHERE f.outcome!='in_progress'").get().n;
+      if (ev >= 10) lines.push(`  ${C.dim}evidence${C.r}     ${ev} features with dispatches · routing could use it: /foreman:config routing=evidence`);
+    }
     lines.push(`  ${C.gy}/foreman:feature · /foreman:review · /foreman:recall · /foreman:map${C.r}`);
     out(lines.join("\n"), { inprog, feats, open, crit, lessons, recentLessons });
   },
@@ -345,6 +362,51 @@ const commands = {
     out([`${C.b}#${id}${C.r} ${f.title} · ${ktok(c.tokens)} tok · ${C.am}${money(c.cost, c.currency)}${C.r} est.`,
       `  ${C.dim}by role${C.r}       ${part(c.byRole)}`, `  ${C.dim}by iteration${C.r}  ${part(Object.fromEntries(Object.entries(c.byIteration).map(([k, v]) => ["it" + k, v])))}`,
       `  ${C.dim}priciest${C.r}      #${c.top.id} ${c.top.role} ${c.top.model}${c.top.unit ? ` ${c.top.unit}` : ""} ${ktok(c.top.tokens)} ${money(c.top.cost, c.currency)}`].join("\n"), c);
+  },
+
+  routing(db) {
+    const cfg = loadConfig();
+    const types = list(flags.type);
+    for (const t of types) oneOf(t, TASK_TYPES, "type");
+    const paths = list(flags.paths);
+    if (sub === "suggest") {
+      const role = oneOf(flags.role ?? "implementer", Object.keys(OUTCOMES), "role");
+      if (types.length !== 1) die("routing suggest needs one --type");
+      const type = types[0];
+      const fallback = cfg.models?.[role] ?? DEFAULTS.models.implementer;
+      const { threshold, minSamples } = cfg.routing;
+      const priors = loadPriors();
+      const rows = judgedRows(db, role, types, paths).filter((r) => r.first_pass !== null);
+      const candidates = Object.entries(cfg.prices).sort((a, b) => a[1].perMTok - b[1].perMTok).map(([m]) => m);
+      let skipped = null, pick = null;
+      for (const model of candidates) {
+        const mine = rows.filter((r) => aliasOf(r.model, cfg.prices) === model);
+        const pass = mine.filter((r) => r.first_pass).length;
+        const rate = blend(pass, mine.length, priorFor(priors, role, type, model));
+        const basis = `${model} first-pass on ${type} ${pass}/${mine.length} here`;
+        if (mine.length >= minSamples && rate >= threshold) { pick = { model, rate, n: mine.length, basis: skipped ?? basis }; break; }
+        if (mine.length >= minSamples && !skipped) skipped = basis;
+      }
+      const res = pick ?? { model: fallback, rate: null, n: rows.length, basis: skipped && rows.length >= minSamples ? `${skipped}; none reach ${threshold}` : `insufficient evidence (n=${rows.length})` };
+      return out(`${role}: ${res.model} (${res.basis})`, { role, type, ...res });
+    }
+    if (sub) die("routing [--type T] [--paths P] | routing suggest --role R --type T");
+    const groups = new Map();
+    for (const r of judgedRows(db, "implementer", types, paths)) {
+      const k = r.task_type + "\t" + aliasOf(r.model, cfg.prices);
+      const g = groups.get(k) ?? { type: r.task_type, model: aliasOf(r.model, cfg.prices), dispatches: 0, judged: 0, firstPass: 0, features: new Map(), tokens: [] };
+      g.dispatches++;
+      if (r.first_pass !== null) { g.judged++; g.firstPass += r.first_pass; }
+      g.features.set(r.feature_id, r.feature_iterations ?? 0);
+      if (r.tokens) g.tokens.push(r.tokens);
+      groups.set(k, g);
+    }
+    const mean = (a) => (a.length ? a.reduce((x, y) => x + y, 0) / a.length : null);
+    const rows = [...groups.values()].map((g) => ({ type: g.type, model: g.model, dispatches: g.dispatches, judged: g.judged, firstPassRate: g.judged ? g.firstPass / g.judged : null, meanIterations: mean([...g.features.values()]), meanTokens: mean(g.tokens) }))
+      .sort((a, b) => a.type.localeCompare(b.type) || a.model.localeCompare(b.model));
+    const pct = (v) => (v === null ? "—" : Math.round(v * 100) + "%");
+    out((rows.length ? [`${C.dim}type        model    n    first-pass  iter  tokens${C.r}`] : []).concat(rows.map((r) =>
+      `${C.mg}${r.type.padEnd(11)}${C.r} ${r.model.padEnd(8)} ${String(r.dispatches).padEnd(4)} ${(pct(r.firstPassRate) + (r.judged ? ` ${Math.round(r.firstPassRate * r.judged)}/${r.judged}` : "")).padEnd(11)} ${(r.meanIterations === null ? "—" : r.meanIterations.toFixed(1)).padEnd(5)} ${r.meanTokens === null ? "—" : ktok(Math.round(r.meanTokens))}`)).join("\n") || "(no implementer dispatches yet)", rows);
   },
 
   dispatch(db) {
