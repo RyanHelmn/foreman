@@ -38,11 +38,19 @@ Settings live in `.foreman/config.json` (project, committed). A user-level defau
   },
   "limits": { "scoutWords": 300, "implementerWords": 250, "reviewerWords": 500, "securityWords": 600 },
   "memory": { "briefing": true, "recallLimit": 10 },
-  "context": { "compactAt": 60 }
+  "context": { "compactAt": 60 },
+  "prices": {
+    "haiku":  { "perMTok": 0.15, "currency": "GBP" },
+    "sonnet": { "perMTok": 2.8,  "currency": "GBP" },
+    "opus":   { "perMTok": 5.6,  "currency": "GBP" },
+    "fable":  { "perMTok": 14,   "currency": "GBP" }
+  }
 }
 ```
 
 `context.compactAt`: the context % at which foreman acts: during an active feature run it compacts between turns (keeping the run's state); after a foreman command has finished it suggests `/clear` in the status line instead. Other sessions are left to Claude Code. `false` turns it off.
+
+`prices`: a blended price per million tokens for each model, used only for the estimates in `memory cost`, `feature list`, `feature report` and `MEMORY.md`. Keys are model aliases or full ids; a dispatch whose model is a full id (`claude-sonnet-5-5`) falls back to the alias it contains. The defaults are list prices (Nov 2026) blended at about 80% input / 20% output and converted to GBP. **Edit them** for your currency, plan, or cache-heavy usage; foreman doesn't split input from output.
 
 `worktrees`: `true` isolates implementers in git worktrees only when two or more run at once, and removes each one as soon as it is merged; `false` never uses worktrees.
 
@@ -52,9 +60,9 @@ Why these defaults: scouts only read and summarise (Haiku is plenty and cheap); 
 
 ## Behaviour
 
-1. **No arguments**: read the effective config (merge defaults ← user ← project), show it as a short table with a `(recommended)` tag on values that match defaults, and ask with AskUserQuestion which group to change: models, test strategy & e2e, gates, worktrees, commands. Offer the recommended value as the first option in every question.
+1. **No arguments**: read the effective config (merge defaults ← user ← project), show it as a short table with a `(recommended)` tag on values that match defaults, and ask with AskUserQuestion which group to change: models, test strategy & e2e, gates, worktrees, commands, prices. Offer the recommended value as the first option in every question.
 2. **With arguments** like `reviewer=opus e2e=true maxFixIterations=2`: apply them directly.
-3. Validate: model names must be aliases or `claude-` ids; `maxFixIterations` 1–5; `testStrategy` one of `targeted-then-full`, `full-only`, `targeted-only`; `gates.maxBlocks` 1–10.
+3. Validate: model names must be aliases or `claude-` ids; `maxFixIterations` 1–5; `testStrategy` one of `targeted-then-full`, `full-only`, `targeted-only`; `gates.maxBlocks` 1–10; `prices.*.perMTok` a number ≥ 0 and `currency` a 3-letter code.
 4. If `commands.*` are null and a project map exists, fill them from `.foreman/project-map.md` `## Commands` and confirm.
 5. Write the file (create `.foreman/` if missing), then show the final effective config and one line on what changed.
 6. `--user` flag (or "make this my default for all projects"): write to `~/.claude/foreman.json` instead.

@@ -72,6 +72,7 @@ built    Throttler guard on /auth/login, 5/min per IP, tests added
 files    5 changed · apps/api/src/auth/**, config/throttle.ts
 gates    build ● verify ● review ● security ●   it 2/3 · 10 calls
 lessons  1 stored · ThrottlerGuard must come after AuthGuard
+cost     182k tok · £0.84 est · report .foreman/reports/12.md
 next     open PR · /foreman:check security · /foreman:recall throttler
 ```
 

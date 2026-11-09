@@ -93,7 +93,7 @@ Every command speaks one visual language (`skills/feature/references/style.md`) 
 
 Self-learning loop: `/foreman:feature` starts with `memory relevant` (lessons/decisions/backlog touching the task's paths and terms) and injects hits into worker briefs; it ends by storing the feature record and 0–5 specific lessons. `/foreman:review` writes the backlog; features close backlog items.
 
-Git: the `.db` is ignored; `MEMORY.md` (human-readable + JSON snapshot) is regenerated on every finish/export and committed. A missing `.db` rebuilds from `MEMORY.md` automatically.
+Git: the `.db` is ignored; `MEMORY.md` (human-readable + JSON snapshot, with each feature's cost and first-pass rate) is regenerated on every finish/export and committed, as are the per-feature reports in `.foreman/reports/`. A missing `.db` rebuilds from `MEMORY.md` automatically.
 
 ```
 node --no-warnings <plugin>/scripts/memory.mjs briefing | recall <q> | feature list | backlog list | export | import

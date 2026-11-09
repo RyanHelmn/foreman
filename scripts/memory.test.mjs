@@ -7,6 +7,7 @@ import path from "node:path";
 
 const script = new URL("./memory.mjs", import.meta.url).pathname;
 const root = fs.mkdtempSync(path.join(os.tmpdir(), "foreman-mem-"));
+process.env.HOME = root;
 const mem = (...args) => execFileSync("node", ["--no-warnings", script, "--root", root, ...args], { encoding: "utf8" }).trim();
 const memJson = (...args) => JSON.parse(mem(...args, "--json"));
 
@@ -104,4 +105,38 @@ test("a MEMORY.md from before dispatches existed still imports", () => {
   const run = (...a) => JSON.parse(execFileSync("node", ["--no-warnings", script, "--root", old, ...a, "--json"], { encoding: "utf8" }));
   assert.equal(run("stats").features, 1);
   assert.deepEqual(run("dispatch", "list"), []);
+});
+
+test("cost splits by role and iteration and names the priciest dispatch", () => {
+  const { id: fid } = memJson("feature", "start", "--title", "Costed");
+  const d = (it, role, model, tokens) => {
+    const { id } = memJson("dispatch", "start", "--feature", String(fid), "--iteration", String(it), "--role", role, "--model", model, "--unit", role + it);
+    mem("dispatch", "finish", String(id), "--outcome", { implementer: "DONE", reviewer: "APPROVE", verifier: "PASSED" }[role], "--tokens", String(tokens));
+  };
+  d(0, "implementer", "sonnet", 1_000_000);
+  d(1, "verifier", "claude-sonnet-5-5", 500_000);
+  d(1, "reviewer", "opus", 1_000_000);
+  const c = memJson("cost", String(fid));
+  assert.equal(c.tokens, 2_500_000);
+  assert.equal(c.currency, "GBP");
+  assert.ok(Math.abs(c.cost - (2.8 + 1.4 + 5.6)) < 1e-9);
+  assert.equal(c.byRole.reviewer.tokens, 1_000_000);
+  assert.equal(c.byIteration["1"].tokens, 1_500_000);
+  assert.equal(c.top.role, "reviewer");
+
+  const listed = memJson("feature", "list").find((f) => f.id === fid);
+  assert.ok(Math.abs(listed.cost - 9.8) < 1e-9);
+
+  fs.writeFileSync(path.join(root, ".foreman", "config.json"), JSON.stringify({ prices: { opus: { perMTok: 10, currency: "GBP" } } }));
+  assert.ok(Math.abs(memJson("cost", String(fid)).cost - 14.2) < 1e-9);
+  fs.rmSync(path.join(root, ".foreman", "config.json"));
+
+  const rep = memJson("feature", "report", String(fid));
+  const md = fs.readFileSync(path.join(root, ".foreman", "reports", `${fid}.md`), "utf8");
+  assert.equal(rep.units.length, 1);
+  assert.match(md, /## Gate events/);
+  assert.match(md, /Priciest: #\d+ reviewer opus/);
+
+  mem("export");
+  assert.match(fs.readFileSync(path.join(root, ".foreman", "MEMORY.md"), "utf8"), /2\.5M tok £9\.80/);
 });

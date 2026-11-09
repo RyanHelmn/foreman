@@ -25,6 +25,8 @@
 //   dispatch list   [--feature ID]
 //   dispatch mark-first-pass --feature ID --iteration N --result PASSED|FAILED|INCONCLUSIVE [--failed-paths p1,p2]
 //   gate add        --feature ID --iteration N --gate verify|review|security --result R [--count N] [--categories ...]
+//   cost            <feature_id>             tokens and estimated cost by role and iteration
+//   feature report  <id> [--json]            write .foreman/reports/<id>.md
 //   export                                  write .foreman/MEMORY.md (human-readable + JSON snapshot)
 //   import                                  rebuild db from .foreman/MEMORY.md
 //
@@ -35,6 +37,7 @@ process.on("warning", () => {});
 
 import fs from "node:fs";
 import path from "node:path";
+import os from "node:os";
 
 let DatabaseSync;
 try {
@@ -112,6 +115,38 @@ const norm = (p) => p.trim().replace(/^\.\//, "").replace(/\/+$/, "");
 const overlaps = (a, b) => a === b || a.startsWith(b + "/") || b.startsWith(a + "/");
 const touches = (csv, queries) => queries.length > 0 && list(csv).map(norm).some((s) => queries.some((q) => overlaps(s, q)));
 
+const DEFAULTS = {
+  prices: { haiku: { perMTok: 0.15, currency: "GBP" }, sonnet: { perMTok: 2.8, currency: "GBP" }, opus: { perMTok: 5.6, currency: "GBP" }, fable: { perMTok: 14, currency: "GBP" } },
+  routing: { mode: "static", threshold: 0.8, minSamples: 5 },
+  autonomy: { autoAt: 0.85, askBelow: 0.5 },
+  models: { implementer: "sonnet" },
+};
+function loadConfig() {
+  const read = (f) => { try { return JSON.parse(fs.readFileSync(f, "utf8")); } catch { return {}; } };
+  const cfg = structuredClone(DEFAULTS);
+  for (const layer of [read(path.join(os.homedir(), ".claude", "foreman.json")), read(path.join(DIR, "config.json"))])
+    for (const [k, v] of Object.entries(layer)) cfg[k] = v && typeof v === "object" && !Array.isArray(v) && typeof cfg[k] === "object" ? { ...cfg[k], ...v } : v;
+  return cfg;
+}
+const priceOf = (model, prices) => prices[model] ?? Object.entries(prices).find(([k]) => model.includes(k))?.[1] ?? null;
+const SYM = { GBP: "£", USD: "$", EUR: "€" };
+const money = (n, cur) => (SYM[cur] ?? (cur ? cur + " " : "")) + n.toFixed(2);
+const ktok = (n) => (n >= 1e6 ? (n / 1e6).toFixed(1) + "M" : n >= 1e3 ? Math.round(n / 1e3) + "k" : String(n));
+function costRows(rows, prices) {
+  return rows.map((r) => { const p = r.tokens ? priceOf(r.model, prices) : null; return { ...r, cost: p ? (r.tokens / 1e6) * p.perMTok : 0, currency: p?.currency ?? null }; });
+}
+function featureStats(db, prices) {
+  const stats = new Map();
+  for (const r of costRows(db.prepare("SELECT * FROM dispatches").all(), prices)) {
+    const s = stats.get(r.feature_id) ?? { tokens: 0, cost: 0, currency: null, firstPass: 0, judged: 0 };
+    s.tokens += r.tokens ?? 0; s.cost += r.cost; s.currency ??= r.currency;
+    if (r.first_pass !== null) { s.judged++; s.firstPass += r.first_pass; }
+    stats.set(r.feature_id, s);
+  }
+  return stats;
+}
+const statLine = (s) => [s.tokens ? `${ktok(s.tokens)} tok ${money(s.cost, s.currency)}` : "", s.judged ? `first-pass ${s.firstPass}/${s.judged}` : ""].filter(Boolean).join(" · ");
+
 const GITIGNORE = "# managed by foreman: local state only; the .md/.json files beside this are meant to be committed\nmemory.db\nmemory.db-*\nrun.json\n";
 function openDb() {
   fs.mkdirSync(DIR, { recursive: true });
@@ -182,13 +217,51 @@ const commands = {
       commands.export(db, true);
       out(`feature #${id} ${flags.outcome ?? "done"}`, { id, outcome: flags.outcome ?? "done" });
     } else if (sub === "list") {
-      const rows = db.prepare("SELECT id,title,outcome,iterations,started,finished FROM features ORDER BY id DESC LIMIT ?").all(Number(flags.limit ?? 20));
-      out(rows.map((r) => `${st(r.outcome)} ${C.b}#${r.id}${C.r} ${r.title}${r.iterations ? ` ${C.dim}(${r.iterations} it.)${C.r}` : ""} ${C.gy}${(r.finished ?? r.started).slice(0, 10)}${C.r}`).join("\n") || "(none)", rows);
+      const stats = featureStats(db, loadConfig().prices);
+      const showCost = [...stats.values()].some((s) => s.tokens);
+      const rows = db.prepare("SELECT id,title,outcome,iterations,started,finished FROM features ORDER BY id DESC LIMIT ?").all(Number(flags.limit ?? 20))
+        .map((r) => (showCost ? { ...r, tokens: stats.get(r.id)?.tokens ?? 0, cost: stats.get(r.id)?.cost ?? 0 } : r));
+      const cur = [...stats.values()].find((s) => s.currency)?.currency;
+      out(rows.map((r) => `${st(r.outcome)} ${C.b}#${r.id}${C.r} ${r.title}${r.iterations ? ` ${C.dim}(${r.iterations} it.)${C.r}` : ""}${showCost && r.tokens ? ` ${C.am}${money(r.cost, cur)}${C.r}` : ""} ${C.gy}${(r.finished ?? r.started).slice(0, 10)}${C.r}`).join("\n") || "(none)", rows);
     } else if (sub === "show") {
       const id = Number(rest[0]); const f = db.prepare("SELECT * FROM features WHERE id=?").get(id); if (!f) die("no feature " + id);
       const ls = db.prepare("SELECT kind,text,paths FROM lessons WHERE feature_id=?").all(id);
       out([`#${f.id} ${f.title} [${f.outcome}]`, f.summary, `files: ${f.files}`, `iterations: ${f.iterations}  flipped: ${f.flipped}`, `review: ${f.review}`, `security: ${f.security}`, ...ls.map((l) => `· ${l.kind}: ${l.text}`)].filter(Boolean).join("\n"), { ...f, lessons: ls });
-    } else die("feature start|finish|list|show");
+    } else if (sub === "report") {
+      const id = Number(rest[0]); const f = db.prepare("SELECT * FROM features WHERE id=?").get(id); if (!f) die("feature report <id>");
+      const prices = loadConfig().prices;
+      const ds = costRows(db.prepare("SELECT * FROM dispatches WHERE feature_id=? ORDER BY id").all(id), prices);
+      const gates = db.prepare("SELECT * FROM gate_events WHERE feature_id=? ORDER BY id").all(id);
+      const lessons = db.prepare("SELECT kind,text,paths FROM lessons WHERE feature_id=? ORDER BY id").all(id);
+      const c = summarizeCost(ds);
+      const units = ds.filter((d) => d.role === "implementer");
+      const fp = (v) => (v === null ? "—" : v ? "yes" : "no");
+      const md = [`# Feature #${f.id}: ${f.title}`, "", `**Outcome** ${f.outcome} · **iterations** ${f.iterations} · ${f.started.slice(0, 10)}${f.finished ? ` → ${f.finished.slice(0, 10)}` : ""}`, ""];
+      if (f.summary) md.push(f.summary, "");
+      md.push("## Units", "", "| it | unit | model | type | outcome | first pass | tokens |", "|---|---|---|---|---|---|---|");
+      for (const u of units) md.push(`| ${u.iteration} | ${u.unit || "—"} | ${u.model} | ${u.task_type} | ${u.outcome ?? "—"} | ${fp(u.first_pass)} | ${u.tokens ?? "—"} |`);
+      if (!units.length) md.push("| | (no implementer dispatches recorded) | | | | | |");
+      md.push("", "## Iterations", "");
+      const its = [...new Set(ds.map((d) => d.iteration).concat(gates.map((g) => g.iteration)))].sort((a, b) => a - b);
+      for (const it of its) {
+        const work = ds.filter((d) => d.iteration === it).map((d) => `${d.role} ${d.outcome ?? "…"}`).join(", ");
+        const verdicts = gates.filter((g) => g.iteration === it).map((g) => `${g.gate} ${g.result}`).join(", ");
+        md.push(`- **${it}**: ${[work, verdicts].filter(Boolean).join(" · ")}`);
+      }
+      if (f.flipped) md.push(`- flipped: ${f.flipped}`);
+      md.push("", "## Gate events", "", "| it | gate | result | findings | categories |", "|---|---|---|---|---|");
+      for (const g of gates) md.push(`| ${g.iteration} | ${g.gate} | ${g.result} | ${g.finding_count} | ${g.categories || "—"} |`);
+      md.push("", "## Lessons", "");
+      for (const l of lessons) md.push(`- **${l.kind}** ${l.text}${l.paths ? ` _(${l.paths})_` : ""}`);
+      if (!lessons.length) md.push("- (none)");
+      md.push("", "## Cost", "", c.tokens ? `${ktok(c.tokens)} tokens · ${money(c.cost, c.currency)} estimated (blended prices from config)` : "No token counts recorded.");
+      if (c.tokens) md.push("", `By role: ${Object.entries(c.byRole).map(([k, v]) => `${k} ${money(v.cost, c.currency)}`).join(" · ")}`, `Priciest: #${c.top.id} ${c.top.role} ${c.top.model} ${c.top.unit || ""} ${money(c.top.cost, c.currency)}`.trimEnd());
+      md.push("");
+      const rp = path.join(DIR, "reports", `${id}.md`);
+      fs.mkdirSync(path.dirname(rp), { recursive: true });
+      fs.writeFileSync(rp, md.join("\n"));
+      out(path.relative(ROOT, rp), { path: rp, feature: f, units, gates, lessons, cost: c });
+    } else die("feature start|finish|list|show|report");
   },
 
   lesson(db) {
@@ -264,6 +337,16 @@ const commands = {
     out(top.map((h) => `${h.kind} #${h.id}: ${h.line}`).join("\n") || "(nothing relevant yet)", top);
   },
 
+  cost(db) {
+    const id = Number(sub); const f = db.prepare("SELECT id,title FROM features WHERE id=?").get(id); if (!f) die("cost <feature_id>");
+    const c = summarizeCost(costRows(db.prepare("SELECT * FROM dispatches WHERE feature_id=?").all(id), loadConfig().prices));
+    if (!c.tokens) return out(`#${id} no token counts recorded`, c);
+    const part = (o) => Object.entries(o).map(([k, v]) => `${k} ${ktok(v.tokens)} ${money(v.cost, c.currency)}`).join(" · ");
+    out([`${C.b}#${id}${C.r} ${f.title} · ${ktok(c.tokens)} tok · ${C.am}${money(c.cost, c.currency)}${C.r} est.`,
+      `  ${C.dim}by role${C.r}       ${part(c.byRole)}`, `  ${C.dim}by iteration${C.r}  ${part(Object.fromEntries(Object.entries(c.byIteration).map(([k, v]) => ["it" + k, v])))}`,
+      `  ${C.dim}priciest${C.r}      #${c.top.id} ${c.top.role} ${c.top.model}${c.top.unit ? ` ${c.top.unit}` : ""} ${ktok(c.top.tokens)} ${money(c.top.cost, c.currency)}`].join("\n"), c);
+  },
+
   dispatch(db) {
     if (sub === "start") {
       const feature = int(flags.feature, "feature"), iteration = int(flags.iteration, "iteration");
@@ -329,7 +412,8 @@ const commands = {
     md.push("## Decisions"); for (const d of dump.decisions) md.push(`- ${d.confirmed ? "✅" : "〰️"} ${d.area ? `**${d.area}** · ` : ""}${d.text}`); if (!dump.decisions.length) md.push("- (none)");
     md.push("", "## Lessons"); for (const l of dump.lessons) md.push(`- **${l.kind}** ${l.text}${l.paths ? ` _(${l.paths})_` : ""}${l.feature_id ? ` — feature #${l.feature_id}` : ""}`); if (!dump.lessons.length) md.push("- (none)");
     md.push("", "## Backlog (open)"); const ob = dump.backlog.filter((b) => b.status === "open"); for (const b of ob) md.push(`- #${b.id} **${b.severity}** [${b.area}] ${b.title}${b.effort ? ` (${b.effort})` : ""}${b.plan ? ` — ${b.plan}` : ""}`); if (!ob.length) md.push("- (none)");
-    md.push("", "## Features"); for (const f of [...dump.features].reverse()) md.push(`- #${f.id} **${f.title}** [${f.outcome}] ${f.summary}${f.iterations ? ` · ${f.iterations} iterations` : ""}${f.flipped ? ` · flipped: ${f.flipped}` : ""}`); if (!dump.features.length) md.push("- (none)");
+    const stats = featureStats(db, loadConfig().prices);
+    md.push("", "## Features"); for (const f of [...dump.features].reverse()) { md.push(`- #${f.id} **${f.title}** [${f.outcome}] ${f.summary}${f.iterations ? ` · ${f.iterations} iterations` : ""}${f.flipped ? ` · flipped: ${f.flipped}` : ""}`); const sl = stats.has(f.id) && statLine(stats.get(f.id)); if (sl) md.push(`  - ${sl}`); } if (!dump.features.length) md.push("- (none)");
     md.push("", "<!-- foreman:snapshot -->", "```json", JSON.stringify(dump, null, 1), "```", "");
     fs.writeFileSync(MD_PATH, md.join("\n"));
     if (!quiet) out(`exported ${path.relative(ROOT, MD_PATH)}`, { path: MD_PATH });
@@ -354,6 +438,17 @@ function importFromMd(db) {
   for (const l of dump.lessons ?? []) ftsUpsert(db, "lesson", l.id, l.kind, l.text, (l.paths ?? "").replace(/,/g, " "));
   for (const d of dump.decisions ?? []) ftsUpsert(db, "decision", d.id, d.area ?? "", d.text, "");
   for (const b of dump.backlog ?? []) ftsUpsert(db, "backlog", b.id, b.title, [b.area, b.severity, b.plan].filter(Boolean).join(" "), (b.paths ?? "").replace(/,/g, " "));
+}
+
+function summarizeCost(rows) {
+  const c = { tokens: 0, cost: 0, currency: null, byRole: {}, byIteration: {}, top: null };
+  const add = (o, k, r) => { o[k] ??= { tokens: 0, cost: 0 }; o[k].tokens += r.tokens ?? 0; o[k].cost += r.cost; };
+  for (const r of rows.filter((r) => r.tokens)) {
+    c.tokens += r.tokens; c.cost += r.cost; c.currency ??= r.currency;
+    add(c.byRole, r.role, r); add(c.byIteration, r.iteration, r);
+    if (!c.top || r.cost > c.top.cost || (r.cost === c.top.cost && r.tokens > c.top.tokens)) c.top = r;
+  }
+  return c;
 }
 
 function die(msg) { console.error("memory: " + msg); process.exit(1); }

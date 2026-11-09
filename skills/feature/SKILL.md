@@ -89,8 +89,9 @@ On return: `DONE` → add files to `run.json.changedFiles`, merge the worktree b
    Good: "Prisma `$transaction` with interactive callbacks times out under the default 5s on bulk imports; pass `{ timeout }`". Bad: "added a transaction".
 2. `MEM feature finish <id> --outcome done|partial --summary "<2 lines>" --files <changedFiles> --iterations <n> --flipped "<...>" --review <verdict> --security <gate>`
    (this also regenerates `MEMORY.md`). If a backlog item was addressed: `MEM backlog update <bid> --status done --feature <id>`.
+   Then `MEM feature report <id>` (writes `.foreman/reports/<id>.md`, committed) and `MEM cost <id>` for the close block.
 3. **Clean up**: remove every worktree and branch still in `run.json.worktrees`, then `git worktree prune`. Set `run.json.active = false`.
-4. Report ≤20 lines: what was built, files, verification + what flipped, review verdict + leftover nits, security gate + open findings, iterations used, lessons stored, one next step (open PR / run e2e / deploy).
+4. Report ≤20 lines: what was built, files, verification + what flipped, review verdict + leftover nits, security gate + open findings, iterations used, lessons stored, one next step (open PR / run e2e / deploy). The close block gets one cost line: `cost     182k tok · £0.84 est · report .foreman/reports/12.md` (omit the tokens and cost when none were recorded).
 5. If a new convention emerged, append it to the map's Conventions.
 
 ## When things go wrong
