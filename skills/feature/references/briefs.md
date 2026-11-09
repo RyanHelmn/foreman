@@ -14,7 +14,7 @@ RETURN: the scout output format, ≤300 words, with path:line evidence
 ## Implementer brief
 
 ```
-UNIT: <name>
+UNIT: <the plan's unit title, verbatim; also the Agent call's description>
 GOAL: <what to build/change in 2-4 sentences>
 DONE WHEN: <observable condition, incl. which tests must pass>
 

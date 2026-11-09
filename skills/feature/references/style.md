@@ -44,6 +44,8 @@ One bold line, optionally a short `·` detail. Then the content of that phase in
 
 `build ● · verify ◐ · review ○ · security ○`  it 1/3 · 4 calls · conf 0.72
 
+`conf` shows the after-plan score once Phase 2 has run, with `↓` when the plan lowered it (`conf 0.72 ↓`).
+
 ## Roster (plan and build; fenced block)
 
 ```

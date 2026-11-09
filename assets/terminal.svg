@@ -12,8 +12,8 @@
 
     <text x="32" y="120" font-weight="700" fill="#f8fafc"><tspan fill="#f59e0b">⚒ foreman</tspan> · feature #12 · add rate limiting to login</text>
 
-    <text x="32" y="154" font-weight="700" fill="#f8fafc"><tspan fill="#a78bfa">◇</tspan> gather <tspan font-weight="400" fill="#8b949e">· 3 scouts · 1 lesson recalled</tspan></text>
-    <text x="32" y="184" font-weight="700" fill="#f8fafc"><tspan fill="#38bdf8">▣</tspan> build <tspan font-weight="400" fill="#8b949e">· 2 implementers in worktrees</tspan></text>
+    <text x="32" y="154" font-weight="700" fill="#f8fafc"><tspan fill="#a78bfa">◇</tspan> gather <tspan font-weight="400" fill="#8b949e">· 3 scouts · 1 lesson recalled · conf 0.80</tspan></text>
+    <text x="32" y="184" font-weight="700" fill="#f8fafc"><tspan fill="#38bdf8">▣</tspan> build <tspan font-weight="400" fill="#8b949e">· 2 units planned · conf 0.80 → 0.72 · 2 implementers in worktrees</tspan></text>
 
     <rect x="32" y="196" width="630" height="58" rx="6" fill="#161b22"/>
     <text x="46" y="219"><tspan fill="#38bdf8">▣</tspan> throttle-guard<tspan x="226">apps/api/src/auth/throttle.guard.ts</tspan><tspan x="560" fill="#8b949e">sonnet</tspan><tspan x="630" fill="#34d399">●</tspan></text>
@@ -28,7 +28,7 @@
     <text x="46" y="418" fill="#f59e0b">⚒ foreman · feature #12 · done</text>
     <text x="46" y="442"><tspan fill="#8b949e">built</tspan><tspan x="136">Throttler guard on /auth/login, 5/min per IP, tests added</tspan></text>
     <text x="46" y="466"><tspan fill="#8b949e">files</tspan><tspan x="136">5 changed · apps/api/src/auth/**, config/throttle.ts</tspan></text>
-    <text x="46" y="490"><tspan fill="#8b949e">gates</tspan><tspan x="136">build <tspan fill="#34d399">●</tspan> verify <tspan fill="#34d399">●</tspan> review <tspan fill="#34d399">●</tspan> security <tspan fill="#34d399">●</tspan>  · it 2/3 · conf 0.72</tspan></text>
+    <text x="46" y="490"><tspan fill="#8b949e">gates</tspan><tspan x="136">build <tspan fill="#34d399">●</tspan> verify <tspan fill="#34d399">●</tspan> review <tspan fill="#34d399">●</tspan> security <tspan fill="#34d399">●</tspan>  · it 2/3 · 10 calls · conf 0.72 ↓</tspan></text>
     <text x="46" y="514"><tspan fill="#8b949e">lessons</tspan><tspan x="136">1 stored · ThrottlerGuard must come after AuthGuard</tspan></text>
     <text x="46" y="538"><tspan fill="#8b949e">cost</tspan><tspan x="136">182k tok · <tspan fill="#f59e0b">£0.84</tspan> est · report .foreman/reports/12.md</tspan></text>
     <text x="46" y="562"><tspan fill="#8b949e">next</tspan><tspan x="136">open PR · /foreman:check security</tspan></text>

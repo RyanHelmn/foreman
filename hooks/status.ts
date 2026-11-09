@@ -1,6 +1,8 @@
 import type { AgentInfo, Register } from 'claude-code'
 
 type Gate = 'verify' | 'review' | 'security'
+type Unit = { title?: string; type?: string; files?: string[]; model?: string }
+type Config = { models?: Record<string, string>; maxFixIterations?: number }
 type Run = {
   active?: boolean
   task?: string
@@ -8,7 +10,8 @@ type Run = {
   iteration?: number
   changedFiles?: string[]
   gates?: Partial<Record<Gate, string>>
-  confidence?: { score?: number }
+  confidence?: { before?: number; after?: number; band?: string }
+  plan?: { units?: Unit[] } | null
 }
 type Worker = Pick<AgentInfo, 'id' | 'type' | 'description' | 'status'>
 
@@ -16,6 +19,9 @@ const GATES: Gate[] = ['verify', 'review', 'security']
 const PREFIX = 'foreman:'
 const DONE_MS = 15000
 const COMPACT_AT = 60
+const ROLES: Record<string, string> = { scout: 'scout', implementer: 'implementer', verifier: 'verifier', reviewer: 'reviewer', 'security-auditor': 'security' }
+const MODELS: Record<string, string> = { scout: 'haiku', implementer: 'sonnet', verifier: 'sonnet', reviewer: 'opus', security: 'opus' }
+const ENDED = ['completed', 'failed', 'killed']
 
 const gate = (v?: string) => (v === 'passed' ? '●' : v === 'failed' ? '✕' : v === 'running' ? '◐' : '○')
 const mark = (s: string) => (s === 'completed' ? '●' : s === 'failed' || s === 'killed' ? '✕' : '◐')
@@ -33,9 +39,10 @@ export const line = (s: {
   if (s.run?.active) {
     const r = s.run
     const rail = [`build ${r.changedFiles?.length ? '●' : '○'}`, ...GATES.map(g => `${g} ${gate(r.gates?.[g])}`)]
-    const conf = r.confidence?.score
+    const { before, after } = r.confidence ?? {}
+    const conf = after ?? before
     return [`⚒ #${r.featureId ?? '?'} ${cut(r.task ?? '', 34)}`, rail.join(' '), `it ${r.iteration ?? 0}/${s.max}`]
-      .concat(typeof conf === 'number' ? [`conf ${conf.toFixed(2)}`] : [])
+      .concat(typeof conf === 'number' ? [`conf ${conf.toFixed(2)}${after !== undefined && before !== undefined && after < before ? ' ↓' : ''}`] : [])
       .concat(running ? [`${running} running`] : [])
       .join(' · ')
   }
@@ -57,6 +64,46 @@ export const keep = (run: Run | null, cmd?: string) =>
       ? `/foreman:${cmd} is in progress. Keep what it has done, its findings so far, what is left, and the exact next step.`
       : undefined
 
+export const matchUnit = (description: string, units: Unit[] = []) => {
+  const d = description.trim().toLowerCase()
+  const t = (u: Unit) => (u.title ?? '').trim().toLowerCase()
+  if (!d) return undefined
+  return units.find(u => t(u) === d) ?? units.find(u => t(u) && (d.startsWith(t(u)) || t(u).startsWith(d)))
+}
+
+export const recorder = (exec: (args: string[]) => Promise<unknown>, clock: () => number) => {
+  const seen = new Map<string, number>()
+  const ended = new Set<string>()
+  const tokens = new Map<string, number>()
+  let queue: Promise<unknown> = Promise.resolve()
+  const send = (args: string[]) => (queue = queue.then(() => exec(args)).catch(() => {}))
+
+  return {
+    usage: (id: string, n: number) => void tokens.set(id, (tokens.get(id) ?? 0) + n),
+    observe(run: Run, config: Config | null, agents: Worker[], skip: Set<string>) {
+      for (const a of agents) {
+        const role = a.type.startsWith(PREFIX) ? ROLES[a.type.slice(PREFIX.length)] : undefined
+        if (!role || run.featureId == null || ended.has(a.id) || (skip.has(a.id) && !seen.has(a.id))) continue
+        if (!seen.has(a.id)) {
+          seen.set(a.id, clock())
+          const unit = matchUnit(a.description, run.plan?.units)
+          send(['dispatch', 'start', '--feature', String(run.featureId), '--iteration', String(run.iteration ?? 0), '--role', role,
+            '--model', unit?.model ?? config?.models?.[role] ?? MODELS[role]!, '--agent', a.id,
+            ...(unit ? ['--unit', unit.title!, '--type', unit.type ?? 'other'] : []),
+            ...(unit?.files?.length ? ['--paths', unit.files.join(',')] : [])])
+        }
+        if (ENDED.includes(a.status)) {
+          ended.add(a.id)
+          const n = tokens.get(a.id)
+          send(['dispatch', 'finish', '--agent', a.id, '--outcome', a.status, '--duration', String(Math.round((clock() - seen.get(a.id)!) / 1000)),
+            ...(n ? ['--tokens', String(n)] : [])])
+        }
+      }
+      return queue
+    },
+  }
+}
+
 export const register: Register = on => {
   let cmd: string | undefined
   let before = new Set<string>()
@@ -66,6 +113,7 @@ export const register: Register = on => {
   let isCompacting = false
   let hasRunCommand = false
   let hint: string | undefined
+  let rec: ReturnType<typeof recorder> | undefined
 
   on('skill.prompt', async ($, e, next) => {
     if (e.skill.startsWith(PREFIX)) {
@@ -86,7 +134,11 @@ export const register: Register = on => {
 
   on('turn.complete', async ($, e, next) => {
     const done = await next(e)
-    if (e.agentId) return done
+    if (e.agentId) {
+      const u = done.usage
+      if (u) rec?.usage(e.agentId, u.input_tokens + u.cache_creation_input_tokens + u.output_tokens)
+      return done
+    }
     isTurnOpen = false
     if (!dir) return done
 
@@ -121,8 +173,17 @@ export const register: Register = on => {
   }).catch(($, e, next) => next(e))
 
   on('session.start', async ($, e, next) => {
-    dir = `${await $.session.cwd()}/.foreman`
+    const cwd = await $.session.cwd()
+    dir = `${cwd}/.foreman`
     const json = (p: string) => $.fs.read(p).then(t => JSON.parse(t)).catch(() => null)
+    const has = (p: string) => $.fs.stat(p).then(() => true).catch(() => false)
+    const cli = (await has(`${$.plugin.root}/scripts/memory.mjs`)) ? `${$.plugin.root}/scripts/memory.mjs` : `${$.plugin.root}/../scripts/memory.mjs`
+    rec = recorder(
+      args => $.process.run(['node', '--no-warnings', cli, '--root', cwd, ...args]).then(r => {
+        if (r.exitCode) throw new Error(r.stderr)
+      }),
+      () => Date.now(),
+    )
 
     let seen = -1
     let max = 3
@@ -130,9 +191,13 @@ export const register: Register = on => {
     let idleSince = 0
     let shown: string | undefined
     let busy = false
+    let config: Config | null = null
+    let slow = 0
 
     const tick = async () => {
       if (busy) return
+      // agent.list() every second only while a foreman command or run is live; otherwise just watch run.json every 3 s
+      if (!cmd && !run?.active && ++slow % 3) return
       busy = true
       try {
         const m = await $.fs.stat(`${dir}/run.json`).then(s => s.mtimeMs).catch(() => 0)
@@ -146,10 +211,19 @@ export const register: Register = on => {
             }
           }
           gates = run ? { ...run.gates } : null
-          if (run?.active) max = (await json(`${dir}/config.json`))?.maxFixIterations ?? 3
+          if (run?.active) {
+            config = await json(`${dir}/config.json`)
+            max = config?.maxFixIterations ?? 3
+          }
+        }
+
+        if (!cmd && !run?.active) {
+          if (hint !== shown) $.ui.status((shown = hint))
+          return
         }
 
         const agents = await $.agent.list()
+        if (run?.active) void rec!.observe(run, config, agents, before)
         const workers = agents.filter(a => a.type.startsWith(PREFIX) && !before.has(a.id))
         const isIdle = !isTurnOpen && !workers.some(w => mark(w.status) === '◐')
 
