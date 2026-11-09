@@ -472,7 +472,6 @@ const commands = {
       const result = oneOf(flags.result, OUTCOMES.verifier, "result");
       const failed = list(flags["failed-paths"]).map(norm);
       const rows = db.prepare("SELECT id,paths FROM dispatches WHERE feature_id=? AND iteration=? AND role='implementer' AND first_pass IS NULL").all(feature, iteration);
-      // INCONCLUSIVE, or FAILED with no attributable paths, can't say which unit broke: leave every row unmarked
       const marks = result === "PASSED" ? rows.map((r) => [r.id, 1]) : result === "FAILED" && failed.length ? rows.map((r) => [r.id, touches(r.paths, failed) ? 0 : 1]) : [];
       const upd = db.prepare("UPDATE dispatches SET first_pass=? WHERE id=?");
       for (const [id, v] of marks) upd.run(v, id);

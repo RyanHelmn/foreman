@@ -1,6 +1,6 @@
 {
   "name": "foreman",
-  "version": "0.5.0",
+  "version": "0.6.0",
   "description": "Lightweight tiered orchestration for Claude Code with project memory: map any stack, build features with cheap scouts and isolated implementers, gate once with verify/review/security, audit the whole project into a ranked backlog, and remember decisions and lessons in a zero-dependency SQLite store.",
   "author": {
     "name": "Ryan Helmn"
