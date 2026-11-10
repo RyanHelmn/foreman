@@ -1,16 +1,39 @@
 // foreman Stop gate logic. Input JSON in FOREMAN_HOOK_INPUT (or stdin when run directly).
 import fs from "node:fs";
 import path from "node:path";
+import { DatabaseSync } from "node:sqlite";
 
-export function decide(input, run, cfg, now = Date.now()) {
-  if (!run || !run.active) return null;
+const PASSING = { verify: ["PASSED"], review: ["APPROVE"], security: ["PASS", "PASS_WITH_FINDINGS"] };
+
+export function logged(dir, featureId) {
+  const file = path.join(dir, "memory.db");
+  if (featureId == null || !fs.existsSync(file)) return null;
+  const db = new DatabaseSync(file, { readOnly: true });
+  const rows = db.prepare("SELECT gate, result FROM gate_events WHERE feature_id=?").all(featureId);
+  db.close();
+  return new Set(rows.filter((r) => PASSING[r.gate]?.includes(r.result)).map((r) => r.gate));
+}
+
+const WAIT_MS = 30 * 60e3;
+
+export function running(dir, featureId, now = Date.now()) {
+  const file = path.join(dir, "memory.db");
+  if (featureId == null || !fs.existsSync(file)) return 0;
+  const db = new DatabaseSync(file, { readOnly: true });
+  const rows = db.prepare("SELECT started FROM dispatches WHERE feature_id=? AND finished IS NULL AND agent_id IS NOT NULL").all(featureId);
+  db.close();
+  return rows.filter((r) => now - Date.parse(r.started) < WAIT_MS).length;
+}
+
+export function decide(input, run, cfg, now = Date.now(), logged = null, running = 0) {
+  if (!run || !run.active || running) return null;
   const g = cfg?.gates || {};
   const enforce = g.enforce !== false;
   const maxBlocks = Number.isInteger(g.maxBlocks) ? g.maxBlocks : 3;
   const staleHours = typeof g.staleHours === "number" ? g.staleHours : 6;
   const pending = [];
   if (Array.isArray(run.changedFiles) && run.changedFiles.length) {
-    for (const k of ["verify", "review", "security"]) if (run.gates?.[k] !== "passed") pending.push(k);
+    for (const k of ["verify", "review", "security"]) if (run.gates?.[k] !== "passed" || (logged && !logged.has(k))) pending.push(k);
   }
   if (!pending.length) return null;
   const ageH = run.started ? (now - Date.parse(run.started)) / 36e5 : 0;
@@ -20,7 +43,7 @@ export function decide(input, run, cfg, now = Date.now()) {
     return { write: null, out: { systemMessage: `foreman: a feature run ("${run.task || ""}") is still marked active in .foreman/run.json from ${foreign ? "another session" : `${Math.round(ageH)}h ago`}; not enforcing its gates here. If it is abandoned, set active=false (or run /foreman:feature to resume it).` } };
   }
   const next = { ...run, blockCount: (run.blockCount || 0) + 1, sessionId: run.sessionId || session };
-  const reason = `foreman: run "${run.task || ""}" is active with gates pending: ${pending.join(", ")}. Finish the pending gates (verifier -> reviewer -> security-auditor), set them to "passed" in .foreman/run.json, then set active=false. If you must stop early, set active=false and tell the user which gates were skipped.`;
+  const reason = `foreman: run "${run.task || ""}" is active with gates pending: ${pending.join(", ")}. Finish the pending gates (verifier -> reviewer -> security-auditor), log each verdict with "memory.mjs gate add" (a gate only counts once its passing verdict is logged), set them to "passed" in .foreman/run.json, then set active=false. If you must stop early, set active=false and tell the user which gates were skipped.`;
   if (!enforce) return { write: next, out: { systemMessage: "Reminder: " + reason } };
   if (next.blockCount > maxBlocks) return { write: next, out: { systemMessage: `foreman: gate block limit (${maxBlocks}) reached; allowing stop. Pending: ${pending.join(", ")}. Tell the user.` } };
   return { write: next, out: { decision: "block", reason } };
@@ -35,7 +58,8 @@ if (isMain) {
   const dir = path.join(cwd, ".foreman");
   const read = (f) => { try { return JSON.parse(fs.readFileSync(path.join(dir, f), "utf8")); } catch { return null; } };
   const run = read("run.json");
-  const r = run ? decide(input, run, read("config.json")) : null;
+  let seen = null, busy = 0; try { if (run) { seen = logged(dir, run.featureId); busy = running(dir, run.featureId); } } catch {}
+  const r = run ? decide(input, run, read("config.json"), Date.now(), seen, busy) : null;
   if (r) {
     if (r.write) { try { fs.writeFileSync(path.join(dir, "run.json"), JSON.stringify(r.write, null, 2)); } catch {} }
     process.stdout.write(JSON.stringify(r.out));

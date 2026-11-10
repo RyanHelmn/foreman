@@ -3,7 +3,7 @@
 </p>
 
 <p align="center">
-  <img alt="version" src="https://img.shields.io/badge/version-0.8.0-f59e0b?style=flat-square">
+  <img alt="version" src="https://img.shields.io/badge/version-0.8.1-f59e0b?style=flat-square">
   <img alt="Claude Code plugin" src="https://img.shields.io/badge/Claude%20Code-plugin-d97757?style=flat-square">
   <img alt="any stack" src="https://img.shields.io/badge/stack-any-34d399?style=flat-square">
   <img alt="zero dependencies" src="https://img.shields.io/badge/dependencies-0-38bdf8?style=flat-square">
@@ -17,7 +17,7 @@ foreman runs one lead with cheap scouts, isolated implementers, and three gates 
 - **Right model for each job.** Haiku researches, Sonnet builds in parallel git worktrees, Opus reviews and runs the security gate.
 - **Nothing ships unchecked.** Tests, types and lint, then a fresh-eyes review, then a security pass. Fix loops are capped, so it can't spin forever.
 - **It learns your project.** Lessons, decisions and gotchas are stored after every run and handed to the next one.
-- **Stack specialists at zero context cost.** 41 packs of checkable rules (NestJS, Next.js, Prisma, Expo, Rails, Go, Shopify…). `/foreman:map` picks the ones your project uses, and foreman's six agents become specialists for that stack only when a worker is dispatched; nothing loads at session start.
+- **Stack specialists, loaded per unit.** 41 packs of checkable rules (NestJS, Next.js, Prisma, Expo, Rails, Go, Shopify…). `/foreman:map` picks the ones your project uses, and foreman's six agents become specialists for that stack only when a worker is dispatched; nothing loads at session start, and each implementer reads only the packs its unit's files use.
 - **Token-frugal.** Workers return summaries, not transcripts. Small tasks stay in the main loop.
 - **Gets cheaper and calmer with use.** Every run records what each worker cost and whether its work passed first time. foreman shows you the bill, learns which model handles each kind of task in your repo, and asks less on work with a clean track record.
 
@@ -31,7 +31,7 @@ foreman runs one lead with cheap scouts, isolated implementers, and three gates 
 
    Answer `y` to add the marketplace, then pick a scope (user is first). From a shell: `claude plugin install foreman --marketplace RyanHelmn/foreman`. In the desktop app: click + next to the prompt box → Plugins → Add marketplace `RyanHelmn/foreman` → Add plugin.
 2. In a project: `/foreman:map`. Commit `.foreman/`; it ships its own `.gitignore` that excludes `memory.db*` and `run.json`, so the map, stack guide, role files, config, skills map, rules and `MEMORY.md` are committed and the live state isn't.
-3. Optional `/foreman:config` (e.g. `reviewer=claude-fable-5-1`, `e2e=true`; `--user` for global defaults).
+3. Optional `/foreman:config` (e.g. `reviewer=claude-fable-5-2`, `e2e=true`; `--user` for global defaults).
 
 Then hand it work: `/foreman:feature add rate limiting to login`.
 
@@ -112,8 +112,8 @@ node --no-warnings <plugin>/scripts/memory.mjs briefing | recall <q> | feature l
 
 Every run records what each worker cost and whether its work survived first contact with the verifier, so foreman can tell you what a feature cost and, once there is enough history, which model to use and how much to do unattended.
 
-- **Dispatches and gate events.** Worker dispatches are recorded by the mod; no lead calls. It watches foreman workers during a run and logs each one's role, model, unit, task type and paths (matched from `run.json.plan` by the Agent description), duration, outcome and tokens (input, cache writes and output, summed from the worker's own turns). The lead still logs every verify/review/security verdict with finding categories, and after each verification marks implementer dispatches first-pass or reworked by whether their files were among the failures; a failure in a file several units touched counts as unattributed, not rework. Without the mod loaded you lose the dispatch rows (so cost, routing and the first-pass part of confidence); gate events are unaffected.
-- **`memory cost <feature>`**: tokens and estimated cost split by role and by iteration, naming the priciest dispatch. `feature list` gains a cost column, `MEMORY.md` carries cost and first-pass rate per feature, and `feature report <id>` writes `.foreman/reports/<id>.md` (units, iterations, gate events, lessons, cost), committed alongside the map.
+- **Dispatches and gate events.** Worker dispatches are recorded by the mod; no lead calls. It watches foreman workers during a run and logs each one's role, model, unit, task type and paths (matched from `run.json.plan` by the Agent description), duration, outcome and tokens (input, cache writes and output, summed from the worker's own turns). The lead still logs every verify/review/security verdict with finding categories, and after each verification marks implementer dispatches first-pass or reworked by whether their files were among the failures; a failure in a file several units touched counts as unattributed, not rework. A reviewer `correctness` blocker on a unit's files turns its first-pass into rework, so a model can't score well by passing its own lenient tests. The Stop hook only accepts a gate as passed once a passing verdict for it is logged. Without the mod loaded you lose the dispatch rows (so cost, routing and the first-pass part of confidence); gate events are unaffected.
+- **`memory cost <feature>`**: worker tokens and estimated cost (the lead's own turns and cache reads aren't counted) split by role and by iteration, naming the priciest dispatch. `feature list` gains a cost column, `MEMORY.md` carries cost and first-pass rate per feature, and `feature report <id>` writes `.foreman/reports/<id>.md` (units, iterations, gate events, lessons, cost), committed alongside the map.
 - **`memory routing [--type T] [--paths P]`**: first-pass rate, mean iterations and mean tokens per task type × model. `routing suggest --role implementer --type T` names the cheapest model that clears the threshold here, or falls back to your configured model with "insufficient evidence (n=N)". Local numbers are blended with the plugin's `priors.json`.
 - **`memory confidence --types T,T --paths P`**: a 0–1 score and its three biggest contributors, from the first-pass rate for those task types, how often reviews on those paths needed changes, open critical/high backlog on them, and gotcha lessons on them. A fresh repo scores 0.65. It is computed once from the task and again from the plan's actual types and files; the run uses the lower of the two, shown on the gate rail and the status line (`conf 0.72 ↓` when the plan lowered it).
 

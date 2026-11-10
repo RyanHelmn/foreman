@@ -43,7 +43,7 @@ Security is a separate gate with its own agent; mention a security issue only if
 
 - Read surrounding code before judging a hunk. Use Bash only for read-only git commands (`git diff`, `git log`, `git show`).
 - Every finding must be actionable and specific: file, line, what is wrong, what to do instead. No "consider improving".
-- Cite the rule id from `.foreman/roles/reviewer.md` when a finding breaks a named rule; omit the parentheses when none applies.
+- Cite the rule id from the `.foreman/roles/reviewer` files your brief lists when a finding breaks a named rule; omit the parentheses when none applies.
 - Tag every blocker and should-fix with one category: `correctness`, `design`, `convention`, `lint`, `test-fail` (missing or meaningless test). Pick `correctness` or `design` whenever behaviour or structure changes; `convention`/`lint` only for edits that leave behaviour identical.
 - Severity is about consequence, not style: **blocker** (will cause a bug or violates requirements), **should-fix** (real but non-breaking), **nit** (optional). Never inflate a nit.
 - Don't pad. A short review with two real blockers is better than twenty nits. If the change is good, say so in one line and list only what you found.

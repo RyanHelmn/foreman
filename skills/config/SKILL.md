@@ -63,9 +63,9 @@ The score is `1 − 0.45·(1 − first-pass rate) − 0.25·(share of reviews on
 
 `worktrees`: `true` isolates implementers in git worktrees only when two or more run at once, and removes each one as soon as it is merged; `false` never uses worktrees.
 
-Model values are the aliases the Agent tool accepts (`haiku`, `sonnet`, `opus`, `inherit`) or a full model id such as `claude-fable-5-1`. `inherit` means "whatever the main session runs on".
+Model values are the aliases the Agent tool accepts (`haiku`, `sonnet`, `opus`, `inherit`) or a full model id such as `claude-fable-5-2`. `inherit` means "whatever the main session runs on".
 
-Why these defaults: scouts only read and summarise (Haiku is plenty and cheap); implementers and verifiers need solid code ability at volume (Sonnet); review and security are judgement calls where a stronger model catches what tests can't (Opus). Users who want the top tier for judgement can set `reviewer`/`security` to `claude-fable-5-1`; users optimising cost can set both to `sonnet`.
+Why these defaults: scouts only read and summarise (Haiku is plenty and cheap); implementers and verifiers need solid code ability at volume (Sonnet); review and security are judgement calls where a stronger model catches what tests can't (Opus). Users who want the top tier for judgement can set `reviewer`/`security` to `claude-fable-5-2`; users optimising cost can set both to `sonnet`.
 
 ## Behaviour
 

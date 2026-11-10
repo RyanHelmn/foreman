@@ -25,7 +25,8 @@
 //   dispatch finish <id> | --agent ID   --outcome O [--tokens N] [--tool-uses N] [--duration S] [--notes ...]
 //   dispatch list   [--feature ID]
 //   dispatch mark-first-pass --feature ID --iteration N --result PASSED|FAILED|INCONCLUSIVE [--failed-paths p1,p2]
-//   gate add        --feature ID --iteration N --gate verify|review|security --result R [--count N] [--categories ...]
+//   gate add        --feature ID --iteration N --gate verify|review|security --result R [--count N] [--categories ...] [--paths p1,p2]
+//                   a review REQUEST_CHANGES with category correctness marks the implementers of --paths as reworked
 //   cost            <feature_id>             tokens and estimated cost by role and iteration
 //   feature report  <id> [--json]            write .foreman/reports/<id>.md
 //   routing         [--type T] [--paths P]   first-pass evidence per task type × model
@@ -140,7 +141,7 @@ const commands = {
     const c = ev.featureCost(db, f.id, cfg().prices);
     if (!c.tokens) return out(`#${f.id} no token counts recorded`, c);
     const part = (o) => Object.entries(o).map(([k, v]) => `${k} ${ktok(v.tokens)} ${money(v.cost, c.currency)}`).join(" · ");
-    out([`${C.b}#${f.id}${C.r} ${f.title} · ${ktok(c.tokens)} tok · ${C.am}${money(c.cost, c.currency)}${C.r} est.`,
+    out([`${C.b}#${f.id}${C.r} ${f.title} · ${ktok(c.tokens)} tok · ${C.am}${money(c.cost, c.currency)}${C.r} est. (workers only)`,
       `  ${C.dim}by role${C.r}       ${part(c.byRole)}`, `  ${C.dim}by iteration${C.r}  ${part(Object.fromEntries(Object.entries(c.byIteration).map(([k, v]) => ["it" + k, v])))}`,
       `  ${C.dim}priciest${C.r}      #${c.top.id} ${c.top.role} ${c.top.model}${c.top.unit ? ` ${c.top.unit}` : ""} ${ktok(c.top.tokens)} ${money(c.top.cost, c.currency)}`].join("\n"), c);
   },

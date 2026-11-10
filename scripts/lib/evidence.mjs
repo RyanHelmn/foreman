@@ -71,12 +71,17 @@ export const dispatchList = (db, feature) =>
   feature !== undefined ? db.prepare("SELECT * FROM dispatches WHERE feature_id=? ORDER BY id").all(int(feature, "feature")) : db.prepare("SELECT * FROM dispatches ORDER BY id DESC LIMIT 50").all();
 
 export function markFirstPass(db, a) {
-  const feature = int(a.feature, "feature"), iteration = int(a.iteration, "iteration");
-  const result = oneOf(a.result, OUTCOMES.verifier, "result");
+  const feature = int(a.feature, "feature");
   const failed = list(a.failedPaths).map(norm);
-  const all = db.prepare("SELECT id,paths,first_pass,unattributed FROM dispatches WHERE feature_id=? AND iteration=? AND role='implementer'").all(feature, iteration);
-  const rows = all.filter((r) => r.first_pass === null && !r.unattributed);
-  const owners = (f) => all.filter((r) => touches(r.paths, [f])).length;
+  if (a.review) {
+    const hit = db.prepare("SELECT id,paths FROM dispatches WHERE feature_id=? AND role='implementer' AND first_pass=1").all(feature).filter((r) => touches(r.paths, failed));
+    for (const r of hit) db.prepare("UPDATE dispatches SET first_pass=0 WHERE id=?").run(r.id);
+    return { marked: hit.length, firstPass: 0, reworked: hit.length };
+  }
+  const iteration = int(a.iteration, "iteration");
+  const result = oneOf(a.result, OUTCOMES.verifier, "result");
+  const rows = db.prepare("SELECT id,paths FROM dispatches WHERE feature_id=? AND iteration<=? AND role='implementer' AND first_pass IS NULL AND unattributed=0").all(feature, iteration);
+  const owners = (f) => rows.filter((r) => touches(r.paths, [f])).length;
   const judge = (r) => {
     const hit = failed.filter((f) => touches(r.paths, [f]));
     return !hit.length ? 1 : hit.some((f) => owners(f) === 1) ? 0 : null;
@@ -96,7 +101,8 @@ export function gateAdd(db, a) {
   for (const c of cats) oneOf(c, CATEGORIES, "categories");
   const r = db.prepare("INSERT INTO gate_events (feature_id,iteration,gate,result,finding_count,categories,created) VALUES (?,?,?,?,?,?,?)")
     .run(feature, iteration, gate, result, optInt(a.count, "count") ?? 0, cats.join(","), now());
-  return { id: Number(r.lastInsertRowid) };
+  const reworked = gate === "review" && result === "REQUEST_CHANGES" && cats.includes("correctness") ? markFirstPass(db, { feature, review: true, failedPaths: a.paths }).reworked : 0;
+  return { id: Number(r.lastInsertRowid), ...(reworked ? { reworked } : {}) };
 }
 
 export function routingTable(db, cfg, { types = [], paths = [] } = {}) {

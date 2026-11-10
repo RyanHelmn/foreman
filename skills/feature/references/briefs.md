@@ -24,7 +24,7 @@ INTERFACE (build against this exactly):
 FILES YOU OWN: <list>  — do not edit anything else; report a BLOCKER instead
 
 READ FIRST:
-- .foreman/roles/implementer.md (stack rules for this project; apply every rule it names)
+- .foreman/roles/implementer/_general.md, plus the files in that folder for the stacks this unit's owned files use (a Prisma migration reads prisma.md and sql.md, not tailwind.md); apply every rule they name. No such folder (older map): .foreman/roles/implementer.md
 - <.claude/skills/.../SKILL.md paths from skills.json.implementer>
 - .foreman/stack-guide.md (project-specific conventions)
 
@@ -82,7 +82,7 @@ CONVENTIONS: <pasted from project-map>
 HOUSE PATTERNS: <pasted from project-map; new code using a legacy or third way is a should-fix, a blocker if it duplicates an existing helper>
 DESIGN DECISIONS: <pasted, incl. [user-confirmed]>
 PROJECT RULES: <pasted from .foreman/rules.md; a violation is a blocker>
-READ FIRST: .foreman/roles/reviewer.md (checklist; cite rule ids in findings); <skills.json.reviewer paths>; .foreman/stack-guide.md
+READ FIRST: .foreman/roles/reviewer/_general.md plus the files in that folder for the stacks the diff touches, or .foreman/roles/reviewer.md if there is no such folder (checklist; cite rule ids in findings); <skills.json.reviewer paths>; .foreman/stack-guide.md
 SCOPE: <"full change" | "delta only: files X, Y">
 RETURN: reviewer output format, ≤500 words
 ```

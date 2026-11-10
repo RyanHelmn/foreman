@@ -86,6 +86,12 @@ test("build writes one file per role with only the named rules, once each, in pr
   assert.match(reviewer, /lang quirk/);
   assert.doesNotMatch(reviewer, /fw-unused/);
   assert.doesNotMatch(fs.readFileSync(path.join(out, "roles", "implementer.md"), "utf8"), /lang-x/);
+  const whole = fs.readFileSync(path.join(out, "roles", "implementer.md"), "utf8");
+  for (const f of fs.readdirSync(path.join(out, "roles", "implementer"))) {
+    const one = fs.readFileSync(path.join(out, "roles", "implementer", f), "utf8");
+    assert.match(one, new RegExp(`^# implementer · ${f.slice(0, -3)}\n`));
+    for (const h of one.match(/^### \S+/gm) ?? []) assert.ok(whole.includes(h), `${f}: ${h} is in the combined file`);
+  }
   const skills = JSON.parse(fs.readFileSync(path.join(out, "skills.json"), "utf8"));
   assert.deepEqual(skills.implementer, [".claude/skills/x/SKILL.md"]);
   assert.equal(skills.roles.reviewer, ".foreman/roles/reviewer.md");

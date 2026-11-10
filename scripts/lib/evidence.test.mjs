@@ -5,7 +5,7 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { memoryDb } from "./db.mjs";
-import { blend, confidence, dispatchFinish, dispatchList, dispatchStart, markFirstPass, routingSuggest, routingTable } from "./evidence.mjs";
+import { blend, confidence, dispatchFinish, dispatchList, dispatchStart, gateAdd, markFirstPass, routingSuggest, routingTable } from "./evidence.mjs";
 import { DEFAULTS } from "./util.mjs";
 
 const cfg = (over = {}) => ({ ...structuredClone(DEFAULTS), ...over });
@@ -84,6 +84,25 @@ test("exploration stops once the cheaper model has minSamples for the type", () 
   assert.equal(routingSuggest(db, c, { types: ["docs"] }, []).basis, "exploring · 4/5 samples");
   seed(db, { model: "haiku", type: "docs", pass: 0, n: 1, feature: 2 });
   for (let i = 0; i < 3; i++) assert.equal(routingSuggest(db, c, { types: ["docs"] }, []).exploring, false);
+});
+
+test("a review correctness finding turns a first-pass dispatch into rework", () => {
+  const db = memoryDb();
+  const a = dispatchStart(db, { feature: 1, iteration: 0, role: "implementer", model: "haiku", type: "api", paths: "src/a.ts" }).id;
+  const b = dispatchStart(db, { feature: 1, iteration: 0, role: "implementer", model: "haiku", type: "api", paths: "src/b.ts" }).id;
+  markFirstPass(db, { feature: 1, iteration: 0, result: "PASSED" });
+  assert.deepEqual(markFirstPass(db, { feature: 1, review: true, failedPaths: "src/a.ts" }), { marked: 1, firstPass: 0, reworked: 1 });
+  const rows = Object.fromEntries(dispatchList(db, 1).map((d) => [d.id, d.first_pass]));
+  assert.deepEqual([rows[a], rows[b]], [0, 1]);
+  assert.equal(markFirstPass(db, { feature: 1, review: true }).marked, 0);
+  assert.equal(gateAdd(db, { feature: 1, iteration: 1, gate: "review", result: "REQUEST_CHANGES", categories: "correctness", paths: "src/b.ts" }).reworked, 1);
+});
+
+test("a verify that marks nothing leaves its implementers for the next conclusive one", () => {
+  const db = memoryDb();
+  dispatchStart(db, { feature: 1, iteration: 0, role: "implementer", model: "sonnet", type: "api", paths: "src/a.ts" });
+  assert.equal(markFirstPass(db, { feature: 1, iteration: 0, result: "FAILED" }).marked, 0);
+  assert.deepEqual(markFirstPass(db, { feature: 1, iteration: 1, result: "PASSED" }), { marked: 1, firstPass: 1, reworked: 0 });
 });
 
 test("a failure in a file two units touched leaves both unattributed", () => {
