@@ -17,6 +17,8 @@ test("globs expand braces", () => {
   assert.ok(r.test("src/a.tsx") && r.test("a.ts"));
   assert.ok(!r.test("a.js") && !r.test("a.tsx.bak"));
   assert.ok(globRe("src/?.ts").test("src/a.ts"));
+  assert.ok(globRe("ios/**").test("ios/App/Info.plist") && globRe("**/tests/**").test("app/tests/unit/test_a.py") && globRe("src/{a,b}/**").test("src/a/x/y"));
+  assert.ok(!globRe("ios/**").test("android/App/x") && !globRe("src/*.ts").test("src/a/b.ts"));
 });
 
 test("seeded pack gotchas don't lower confidence; the project's own gotchas do", () => {
@@ -36,6 +38,15 @@ test("a committed project config can tighten autonomy but not loosen it", () => 
     assert.deepEqual([c.autonomy.autoAt, c.autonomy.askBelow, c.autonomy.minSamples, c.gates.enforce, c.gates.maxBlocks], [0.85, 0.5, 10, false, 5]);
     fs.writeFileSync(path.join(proj, "config.json"), JSON.stringify({ autonomy: { autoAt: 0.95 } }));
     assert.equal(loadConfig(proj).autonomy.autoAt, 0.95);
+    for (const bad of ['{"autonomy":null}', "null", '{"autonomy":5}', "[1]"]) {
+      fs.writeFileSync(path.join(proj, "config.json"), bad);
+      assert.deepEqual(loadConfig(proj).autonomy, DEFAULTS.autonomy, bad);
+    }
+    fs.mkdirSync(path.join(home, ".claude"));
+    fs.writeFileSync(path.join(home, ".claude", "foreman.json"), '{"autonomy":5}');
+    fs.writeFileSync(path.join(proj, "config.json"), "{}");
+    assert.deepEqual(loadConfig(proj).autonomy, DEFAULTS.autonomy);
+    fs.rmSync(path.join(home, ".claude"), { recursive: true });
     fs.mkdirSync(path.join(home, ".claude"));
     fs.writeFileSync(path.join(home, ".claude", "foreman.json"), JSON.stringify({ autonomy: { autoAt: 0.7 } }));
     fs.writeFileSync(path.join(proj, "config.json"), "{}");

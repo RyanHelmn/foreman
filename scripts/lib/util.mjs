@@ -22,7 +22,8 @@ export const now = () => new Date().toISOString();
 export const list = (v) => (typeof v === "string" && v.length ? v.split(",").map((s) => s.trim()).filter(Boolean) : []);
 export const norm = (p) => p.trim().replace(/^\.\//, "").replace(/\/+$/, "");
 export const overlaps = (a, b) => a === b || a.startsWith(b + "/") || b.startsWith(a + "/");
-export const globRe = (glob) => new RegExp("(^|/)" + glob.replace(/[.+^$()|[\]\\]/g, "\\$&").replace(/\{([^{}]*)\}/g, (_, alts) => "\x01" + alts.split(",").join("\x02") + "\x03").replace(/\*\*\//g, "\0").replace(/\*\*/g, ".*").replace(/\*/g, "[^/]*").replace(/\?/g, "[^/]").replace(/\0/g, "(?:.*/)?").replace(/\x01/g, "(?:").replace(/\x02/g, "|").replace(/\x03/g, ")") + "$");
+// shortcut: one level of {a,b} braces, no nesting; upgrade if a pack needs nested alternatives
+export const globRe = (glob) => new RegExp("(^|/)" + glob.replace(/[.+^$()|[\]\\]/g, "\\$&").replace(/\{([^{}]*)\}/g, (_, alts) => "\x01" + alts.split(",").join("\x02") + "\x03").replace(/\*\*\//g, "\0").replace(/\*\*/g, "\x04").replace(/\*/g, "[^/]*").replace(/\?/g, "[^/]").replace(/\0/g, "(?:.*/)?").replace(/\x04/g, ".*").replace(/\x01/g, "(?:").replace(/\x02/g, "|").replace(/\x03/g, ")") + "$");
 export const touches = (csv, queries) => queries.length > 0 && list(csv).map(norm).some((s) => queries.some((q) => (s.includes("*") ? globRe(s).test(q) : overlaps(s, q))));
 
 export const fail = (msg) => { throw new Error(msg); };
@@ -36,10 +37,11 @@ const merge = (cfg, layer) => {
 };
 
 export function loadConfig(dir) {
-  const read = (f) => { try { return JSON.parse(fs.readFileSync(f, "utf8")); } catch { return {}; } };
+  const read = (f) => { try { const j = JSON.parse(fs.readFileSync(f, "utf8")); return j && typeof j === "object" && !Array.isArray(j) ? j : {}; } catch { return {}; } };
   const base = merge(structuredClone(DEFAULTS), read(path.join(os.homedir(), ".claude", "foreman.json")));
   const cfg = merge(structuredClone(base), read(path.join(dir, "config.json")));
-  cfg.autonomy = { ...cfg.autonomy, autoAt: Math.max(base.autonomy.autoAt, cfg.autonomy.autoAt ?? 0), askBelow: Math.max(base.autonomy.askBelow, cfg.autonomy.askBelow ?? 0), minSamples: Math.max(base.autonomy.minSamples, cfg.autonomy.minSamples ?? 0) };
+  const num = (o, k) => (o && typeof o === "object" && Number.isFinite(o[k]) ? o[k] : DEFAULTS.autonomy[k]);
+  cfg.autonomy = { ...(cfg.autonomy && typeof cfg.autonomy === "object" ? cfg.autonomy : {}), ...Object.fromEntries(["autoAt", "askBelow", "minSamples"].map((k) => [k, Math.max(num(base.autonomy, k), num(cfg.autonomy, k))])) };
   return cfg;
 }
 

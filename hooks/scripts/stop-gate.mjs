@@ -64,7 +64,8 @@ if (isMain) {
   let run = read("run.json");
   if (run?.active) { try { execFileSync("git", ["ls-files", "--error-unmatch", ".foreman/run.json"], { cwd, stdio: "ignore" }); run = null; } catch {} }
   let seen = null, busy = 0; try { if (run) { seen = logged(dir, run.featureId); busy = running(dir, run.featureId); } } catch {}
-  const r = run ? decide(input, run, loadConfig(dir), Date.now(), seen, busy) : null;
+  let cfg = null; try { cfg = loadConfig(dir); } catch {}
+  const r = run ? decide(input, run, cfg, Date.now(), seen, busy) : null;
   if (r) {
     if (r.write) { try { writeSafe(path.join(dir, "run.json"), JSON.stringify(r.write, null, 2)); } catch {} }
     process.stdout.write(JSON.stringify(r.out));
