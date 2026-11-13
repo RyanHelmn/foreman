@@ -19,7 +19,7 @@ Outputs, all in `.foreman/` at the project root:
 |---|---|---|
 | `project-map.md` | yes | What the project is, layout, data, auth/trust, commands, conventions, decisions, risk areas |
 | `stack-guide.md` | yes | Project-specific conventions the packs don't cover |
-| `roles/*.md` | yes | Stack rules per worker role, built from the selected packs (`scripts/packs.mjs build`) |
+| `roles/<role>/<pack>.md` | yes | Stack rules per worker role, one file per selected pack (`scripts/packs.mjs build`); workers read `_general.md` plus the packs their files use |
 | `config.json` | yes | Commands, models, test strategy, gates (`/foreman:config`) |
 | `skills.json` | yes | Selected packs, role files, and installed skill files per worker role |
 | `rules.md` | yes | Project rules every session and worker follows (`/foreman:rules`) |
@@ -59,7 +59,7 @@ Combine the briefs with `CLAUDE.md`, `README*`, `docs/`, ADRs, `CONTRIBUTING*`, 
   "guide": ".foreman/stack-guide.md" }
 ```
 
-4. **Build roles**: `PACKS build --packs <the confirmed list>`. It writes `.foreman/roles/{implementer,reviewer,security,verifier}.md` (each selected pack's role file plus the full text of the rules it names), adds `packs` and `roles` to `skills.json`, and imports the packs' seed gotchas as lessons once (a lesson the user deletes is never re-imported). Show the per-role word counts it prints.
+4. **Build roles**: `PACKS build --packs <the confirmed list>`. It writes `.foreman/roles/{implementer,reviewer,security,verifier}/<pack>.md` (each selected pack's role file plus the full text of the rules it names), removes any older combined `roles/<role>.md`, adds `packs`, `roles` and `builtWith` (the plugin version, so a later plugin update is detected by `PACKS check` and fixed with `PACKS build`) to `skills.json`, and imports the packs' seed gotchas as lessons once (a lesson the user deletes is never re-imported). Show the per-role word counts it prints.
 5. **Stack guide**: write `.foreman/stack-guide.md` with only `## Project-specific`: conventions observed in Phase 2 that the role files don't cover, and anything a selected pack says that this project deliberately does differently (the guide wins for this project).
 
 Workers get their role file, the guide and their installed skills. Nothing from a pack is loaded at session start.
@@ -73,10 +73,10 @@ Record each answer twice: in `project-map.md › Design decisions` tagged `[user
 ## Phase 5 — Config, memory, finish
 
 1. `MEM init` (creates the db; imports `MEMORY.md` if present).
-2. Write `config.json` from `/foreman:config` defaults with the discovered commands; `testStrategy: "targeted-then-full"`, `e2e: false` unless the user said otherwise.
+2. Write `config.json` from `/foreman:config` defaults with the discovered commands; `testStrategy: "targeted-then-full"`, `e2e: false` unless the user said otherwise. Show the commands you wrote, and once the user has seen them run `MEM commands approve`.
 3. `MEM init` also writes `.foreman/.gitignore` (ignores `memory.db*` and `run.json`), so the project's own `.gitignore` needs no changes; confirm it exists.
 4. `MEM export`, then reply in ≤10 lines: stack summary, skills installed per role, decisions confirmed, and the next command: `/foreman:feature <task>` or `/foreman:review`.
 
 ## Re-running
 
-On a project that already has `.foreman/`: re-fingerprint, diff against the existing map, keep every `[user-confirmed]` decision and all memory, re-run pack detection and `PACKS build` (a new stack picks up its pack; deleted gotchas stay deleted), refresh the stack guide, only ask about things that changed, and run `npx skills check` for skill updates. Use this whenever the context feels stale or after large refactors.
+On a project that already has `.foreman/`: re-fingerprint, diff against the existing map, keep every `[user-confirmed]` decision and all memory, re-run pack detection and `PACKS build` (a new stack picks up its pack; deleted gotchas stay deleted), refresh the stack guide, only ask about things that changed, and run `npx skills check` for skill updates (show them; install an update only after the user picks it). Use this whenever the context feels stale or after large refactors.

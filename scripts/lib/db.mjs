@@ -1,6 +1,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { importFromMd } from "./export.mjs";
+import { writeSafe } from "./util.mjs";
 
 process.removeAllListeners("warning");
 process.on("warning", () => {});
@@ -50,9 +51,10 @@ export const memoryDb = () => prepare(new DatabaseSync(":memory:"));
 
 const GITIGNORE = "# managed by foreman: local state only; the .md/.json files beside this are meant to be committed\nmemory.db\nmemory.db-*\nrun.json\n";
 export function openDb(dir) {
+  writeSafe(path.join(dir, ".gitignore"));
   fs.mkdirSync(dir, { recursive: true });
   const gi = path.join(dir, ".gitignore");
-  if (!fs.existsSync(gi)) fs.writeFileSync(gi, GITIGNORE);
+  if (!fs.existsSync(gi)) writeSafe(gi, GITIGNORE);
   const file = path.join(dir, "memory.db");
   const fresh = !fs.existsSync(file);
   const db = new DatabaseSync(file);

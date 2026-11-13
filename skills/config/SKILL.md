@@ -11,7 +11,7 @@ description: >
 
 **Presentation**: use `${CLAUDE_PLUGIN_ROOT}/skills/feature/references/style.md` — header `**⚒ foreman** · config`, settings as a short fenced two-column block, `(recommended)` tags.
 
-Settings live in `.foreman/config.json` (project, committed). A user-level default file at `~/.claude/foreman.json` is used for any key the project file omits. Project wins over user; user wins over the built-in defaults below.
+Settings live in `.foreman/config.json` (project, committed). A user-level default file at `~/.claude/foreman.json` is used for any key the project file omits. Project wins over user; user wins over the built-in defaults below. One exception, because the project file is committed and arrives with any clone: it can raise `autonomy.autoAt`, `askBelow` and `minSamples`, but never lower them below what the user file (or the defaults) allow; to loosen those, use `--user`. Its `commands.*` are run only after the user has approved them on this machine (`memory commands check|approve`, kept in `~/.claude/foreman-trust.json`), and any change to them needs a new approval.
 
 **Map first**: if `.foreman/project-map.md` does not exist, say so in one line (`⚒ no project map yet · running /foreman:map first`), run `/foreman:map` to completion, then carry on with this command.
 
@@ -37,7 +37,7 @@ Settings live in `.foreman/config.json` (project, committed). A user-level defau
     "audit": null
   },
   "limits": { "scoutWords": 300, "implementerWords": 250, "reviewerWords": 500, "securityWords": 600 },
-  "memory": { "briefing": true, "recallLimit": 10 },
+  "memory": { "briefing": true, "recallLimit": 10, "exportSecurity": true },
   "context": { "compactAt": 60 },
   "prices": {
     "haiku":  { "perMTok": 0.15, "currency": "GBP" },
@@ -46,7 +46,7 @@ Settings live in `.foreman/config.json` (project, committed). A user-level defau
     "fable":  { "perMTok": 14,   "currency": "GBP" }
   },
   "routing": { "mode": "static", "threshold": 0.8, "minSamples": 5, "explore": { "every": 4, "types": ["docs", "config", "test", "refactor"] } },
-  "autonomy": { "autoAt": 0.85, "askBelow": 0.5 }
+  "autonomy": { "autoAt": 0.85, "askBelow": 0.5, "minSamples": 10 }
 }
 ```
 
@@ -58,8 +58,10 @@ Settings live in `.foreman/config.json` (project, committed). A user-level defau
 
 `routing.explore`: evidence mode can only confirm the configured model unless a cheaper one gets tried. For units whose type is in `explore.types` (never `auth`, `migration`, `data-model` or `infra`, never a unit touching a Risk area, never in the `ask` band), when the next-cheaper model has fewer than `minSamples` judged dispatches for that type, every `every`-th such unit is dispatched on it instead, shown as `exploring · n/minSamples samples`. A miss costs one fix iteration on a low-risk unit. `every: 0` turns it off.
 
-`autonomy`: how much `/foreman:feature` does without asking, set by the run's confidence score (`memory confidence`, computed after Phase 1 and shown on the gate rail). At or above `autoAt` it skips plan approval for non-destructive work and applies reviewer should-fixes tagged `convention`/`lint` on files it already changed, checked once with `commands.testSubset` + `commands.typecheck` (not without a `testSubset`). Below `askBelow` it always stops after the plan and shows what lowered the score. In between it behaves as it always has.
+`autonomy`: how much `/foreman:feature` does without asking, set by the run's confidence score (`memory confidence`, computed after Phase 1 and shown on the gate rail). At or above `autoAt` it skips plan approval for non-destructive work and applies reviewer should-fixes tagged `convention`/`lint` on files it already changed, checked once with `commands.testSubset` + `commands.typecheck` (not without a `testSubset`). Below `askBelow` it always stops after the plan and shows what lowered the score. In between it behaves as it always has. The `auto` band also needs `minSamples` judged implementer dispatches for the task types involved, so one clean run can't switch approval off.
 The score is `1 − 0.45·(1 − first-pass rate) − 0.25·(share of reviews on these paths that needed changes) − min(0.2, 0.1·open critical/high backlog items on these paths) − min(0.1, 0.05·gotcha lessons on these paths)`. A rate with no data counts as 0.5, so **a fresh repo scores 0.65**: in the middle band, with current behaviour, until evidence moves it. Evidence can raise it toward 1; risks only lower it.
+
+`memory.exportSecurity`: `true` keeps open security backlog items and security-gate notes in the committed `MEMORY.md`, so a lost db or a teammate's clone still has them. Set `false` for a public repo: they then live only in the local `memory.db` and are gone if it is deleted. Either way, anything that looks like a key, token or connection-string password is redacted in `MEMORY.md`.
 
 `worktrees`: `true` isolates implementers in git worktrees only when two or more run at once, and removes each one as soon as it is merged; `false` never uses worktrees.
 
@@ -72,7 +74,7 @@ Why these defaults: scouts only read and summarise (Haiku is plenty and cheap); 
 1. **No arguments**: read the effective config (merge defaults ← user ← project), show it as a short table with a `(recommended)` tag on values that match defaults, and ask with AskUserQuestion which group to change: models, test strategy & e2e, gates, worktrees, commands, prices, routing, autonomy. Offer the recommended value as the first option in every question.
 2. **With arguments** like `reviewer=opus e2e=true maxFixIterations=2`: apply them directly.
 3. Validate: model names must be aliases or `claude-` ids; `maxFixIterations` 1–5; `testStrategy` one of `targeted-then-full`, `full-only`, `targeted-only`; `gates.maxBlocks` 1–10; `prices.*.perMTok` a number ≥ 0 and `currency` a 3-letter code; `routing.mode` `static` or `evidence`, `routing.threshold` 0–1, `routing.minSamples` ≥ 1, `routing.explore.every` ≥ 0 and `routing.explore.types` from the task types; `autonomy.askBelow` < `autonomy.autoAt`, both 0–1.
-4. If `commands.*` are null and a project map exists, fill them from `.foreman/project-map.md` `## Commands` and confirm.
+4. If `commands.*` are null and a project map exists, fill them from `.foreman/project-map.md` `## Commands` and confirm. Whenever `commands.*` change and the user has confirmed the new values, run `memory commands approve`.
 5. Write the file (create `.foreman/` if missing), then show the final effective config and one line on what changed.
 6. `--user` flag (or "make this my default for all projects"): write to `~/.claude/foreman.json` instead.
 7. **`statusline`** argument (or "set up the foreman status line"): install the live status line.

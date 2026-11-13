@@ -17,7 +17,7 @@ foreman runs one lead with cheap scouts, isolated implementers, and three gates 
 - **Right model for each job.** Haiku researches, Sonnet builds in parallel git worktrees, Opus reviews and runs the security gate.
 - **Nothing ships unchecked.** Tests, types and lint, then a fresh-eyes review, then a security pass. Fix loops are capped, so it can't spin forever.
 - **It learns your project.** Lessons, decisions and gotchas are stored after every run and handed to the next one.
-- **Stack specialists, loaded per unit.** 41 packs of checkable rules (NestJS, Next.js, Prisma, Expo, Rails, Go, Shopify…). `/foreman:map` picks the ones your project uses, and foreman's six agents become specialists for that stack only when a worker is dispatched; nothing loads at session start, and each implementer reads only the packs its unit's files use.
+- **Stack specialists, loaded per unit.** 41 packs of checkable rules (NestJS, Next.js, Prisma, Expo, Rails, Go, Shopify…). `/foreman:map` picks the ones your project uses, and foreman's six agents become specialists for that stack only when a worker is dispatched; no stack rules load at session start, and every worker reads only the packs its files use.
 - **Token-frugal.** Workers return summaries, not transcripts. Small tasks stay in the main loop.
 - **Gets cheaper and calmer with use.** Every run records what each worker cost and whether its work passed first time. foreman shows you the bill, learns which model handles each kind of task in your repo, and asks less on work with a clean track record.
 
@@ -97,7 +97,7 @@ Every command speaks one visual language (`skills/feature/references/style.md`) 
 
 Self-learning loop: `/foreman:feature` starts with `memory relevant` (lessons/decisions/backlog touching the task's paths and terms) and injects hits into worker briefs; it ends by storing the feature record and 0–5 specific lessons. `/foreman:review` writes the backlog; features close backlog items.
 
-Git: the `.db` is ignored; `MEMORY.md` (human-readable + JSON snapshot, with each feature's cost and first-pass rate) is regenerated on every finish/export and committed, as are the per-feature reports in `.foreman/reports/`. A missing `.db` rebuilds from `MEMORY.md` automatically.
+Git: the `.db` is ignored; `MEMORY.md` (human-readable + JSON snapshot, with each feature's cost and first-pass rate) is regenerated on every finish/export and committed, as are the per-feature reports in `.foreman/reports/`. A missing `.db` rebuilds from `MEMORY.md` automatically. Anything that looks like a key, token or connection-string password is redacted in it. For a public repo, set `memory.exportSecurity: false` to keep open `security` backlog items and the security gate's notes out of it (they then live only in the local `.db`).
 
 ```
 node --no-warnings <plugin>/scripts/memory.mjs briefing | recall <q> | feature list | feature report <id> | backlog list
@@ -121,14 +121,14 @@ Two config groups drive it (`/foreman:config`):
 
 ```json
 "routing":  { "mode": "static", "threshold": 0.8, "minSamples": 5, "explore": { "every": 4, "types": ["docs", "config", "test", "refactor"] } },
-"autonomy": { "autoAt": 0.85, "askBelow": 0.5 }
+"autonomy": { "autoAt": 0.85, "askBelow": 0.5, "minSamples": 10 }
 ```
 
-`routing.mode: "evidence"` makes the plan pick each implementer's model with `routing suggest` and show why (`implementer: opus (sonnet first-pass on migration 2/7 here)`); the briefing suggests it once 10 finished features have dispatch records. So evidence can find a cheaper model at all, every 4th low-risk unit (`docs`, `config`, `test`, `refactor`; never auth, migrations, data models, infra or a Risk area) whose next-cheaper model has under `minSamples` judged dispatches runs on that model instead; the verifier catches a miss. Rows with fewer than 10 judged dispatches are labelled `(small n)`. With confidence at or above `autoAt`, foreman skips plan approval for non-destructive work and applies the reviewer's `convention`/`lint` should-fixes on files it already changed, checked once with your test-subset and typecheck commands. Below `askBelow`, it always stops after the plan and shows what lowered the score. `prices` are placeholder blended rates in GBP and only feed the estimates; edit them to match your plan.
+`routing.mode: "evidence"` makes the plan pick each implementer's model with `routing suggest` and show why (`implementer: opus (sonnet first-pass on migration 2/7 here)`); the briefing suggests it once 10 finished features have dispatch records. So evidence can find a cheaper model at all, every 4th low-risk unit (`docs`, `config`, `test`, `refactor`; never auth, migrations, data models, infra or a Risk area) whose next-cheaper model has under `minSamples` judged dispatches runs on that model instead; the verifier catches a miss. Rows with fewer than 10 judged dispatches are labelled `(small n)`. With confidence at or above `autoAt`, and at least `minSamples` judged dispatches for the task types involved, foreman skips plan approval for non-destructive work and applies the reviewer's `convention`/`lint` should-fixes on files it already changed, checked once with your test-subset and typecheck commands. Below `askBelow`, it always stops after the plan and shows what lowered the score. `prices` are placeholder blended rates in GBP and only feed the estimates; edit them to match your plan.
 
 ## Any stack
 
-`/foreman:map` identifies whatever is there and selects **packs**: 41 bundled stacks (TypeScript, Node, NestJS, Next.js, React, React Query, Tailwind, Expo, Flutter, Swift, Android, Electron, Prisma, SQL, Postgres, Redis, BullMQ, MongoDB, search, better-auth, Shopify, Stripe, LLM features, Python, FastAPI, Django, Go, Rust, JVM, Spring, Ruby, Rails, PHP, Laravel, .NET, Docker, Kubernetes, GitHub Actions, monorepos and more), plus `_general` for every project. A pack is not an agent: it is a set of rules (one checkable claim each, with an Incorrect/Correct pair and an impact) and four role files saying which rules the implementer, reviewer, security auditor and verifier apply, with stack-specific deviation rules, commands and quirks to report. `scripts/packs.mjs build` concatenates the selected packs into `.foreman/roles/<role>.md`, so foreman's six agents become NestJS, Expo or Rails specialists only when a worker for that role is dispatched; nothing loads at session start. Pack gotchas are seeded into memory once (delete one with `memory lesson delete` and it stays deleted). Installed ecosystem skills (`npx skills find`) are proposed only for tech no pack covers, and the map records one **house pattern** per concern with an exemplar file, so implementers copy the right way, the reviewer flags a second way (citing the rule id), and `/foreman:tidy` moves stragglers over.
+`/foreman:map` identifies whatever is there and selects **packs**: 41 bundled stacks (TypeScript, Node, NestJS, Next.js, React, React Query, Tailwind, Expo, Flutter, Swift, Android, Electron, Prisma, SQL, Postgres, Redis, BullMQ, MongoDB, search, better-auth, Shopify, Stripe, LLM features, Python, FastAPI, Django, Go, Rust, JVM, Spring, Ruby, Rails, PHP, Laravel, .NET, Docker, Kubernetes, GitHub Actions, monorepos and more), plus `_general` for every project. A pack is not an agent: it is a set of rules (one checkable claim each, with an Incorrect/Correct pair and an impact) and four role files saying which rules the implementer, reviewer, security auditor and verifier apply, with stack-specific deviation rules, commands and quirks to report. `scripts/packs.mjs build` writes `.foreman/roles/<role>/<pack>.md`, one file per selected pack, so foreman's six agents become NestJS, Expo or Rails specialists only when a worker for that role is dispatched, and each worker reads `_general.md` plus only the packs its files use; no stack rules load at session start. Pack gotchas are seeded into memory once (delete one with `memory lesson delete` and it stays deleted). Installed ecosystem skills (`npx skills find`) are proposed only for tech no pack covers, and the map records one **house pattern** per concern with an exemplar file, so implementers copy the right way, the reviewer flags a second way (citing the rule id), and `/foreman:tidy` moves stragglers over.
 
 ## Token economy
 
@@ -136,6 +136,10 @@ Two config groups drive it (`/foreman:config`):
 - Review and security: once after convergence; re-runs on the delta only.
 - Workers return summaries, never transcripts. `maxFixIterations` (3) and `gates.maxBlocks` (3) cap every loop.
 - Tasks ≤2 files are done in the main loop.
+
+## Cloned repos
+
+`.foreman/` is committed, so it arrives with any clone and foreman treats it as the repo's, not yours. A committed `config.json` can raise the autonomy thresholds but never lower them below your own `~/.claude/foreman.json`, and its `commands` are shown to you for approval before foreman runs them the first time on your machine and again whenever they change. The Stop gate ignores a `run.json` that is tracked by git. `rules.md` can't switch off gates, plan approval or security checks, and workers treat text in the repo as data. Memory, reports and role files refuse to write through symlinks.
 
 ## Requirements
 

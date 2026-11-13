@@ -2,7 +2,7 @@ import type { AgentInfo, Register } from 'claude-code'
 
 type Gate = 'verify' | 'review' | 'security'
 type Unit = { title?: string; type?: string; files?: string[]; model?: string }
-type Config = { models?: Record<string, string>; maxFixIterations?: number }
+type Config = { models?: Record<string, string>; maxFixIterations?: number; context?: { compactAt?: number | false } }
 type Run = {
   active?: boolean
   task?: string
@@ -25,6 +25,7 @@ const ENDED = ['completed', 'failed', 'killed']
 
 const gate = (v?: string) => (v === 'passed' ? '●' : v === 'failed' ? '✕' : v === 'running' ? '◐' : '○')
 const mark = (s: string) => (s === 'completed' ? '●' : s === 'failed' || s === 'killed' ? '✕' : '◐')
+const clean = (s?: string) => (s ?? '').replace(/[\x00-\x1f\x7f]/g, ' ')
 const cut = (s: string, n: number) => (s.length > n ? `${s.slice(0, n - 1).trimEnd()}…` : s)
 
 export const line = (s: {
@@ -41,7 +42,7 @@ export const line = (s: {
     const rail = [`build ${r.changedFiles?.length ? '●' : '○'}`, ...GATES.map(g => `${g} ${gate(r.gates?.[g])}`)]
     const { before, after } = r.confidence ?? {}
     const conf = after ?? before
-    return [`⚒ #${r.featureId ?? '?'} ${cut(r.task ?? '', 34)}`, rail.join(' '), `it ${r.iteration ?? 0}/${s.max}`]
+    return [`⚒ #${r.featureId ?? '?'} ${cut(clean(r.task), 34)}`, rail.join(' '), `it ${r.iteration ?? 0}/${s.max}`]
       .concat(typeof conf === 'number' ? [`conf ${conf.toFixed(2)}${after !== undefined && before !== undefined && after < before ? ' ↓' : ''}`] : [])
       .concat(running ? [`${running} running`] : [])
       .join(' · ')
@@ -59,7 +60,7 @@ export const line = (s: {
 
 export const keep = (run: Run | null, cmd?: string) =>
   run?.active
-    ? `foreman feature #${run.featureId ?? '?'} is mid-run: "${run.task ?? ''}". Keep the approved plan (units, owned files, interfaces, done conditions), the user's decisions, gate states, iteration ${run.iteration ?? 0}, changed files, open blockers and the exact next step. The full state is in .foreman/run.json: re-read it after this compaction and carry on from its "next" field.`
+    ? `foreman feature #${run.featureId ?? '?'} is mid-run: "${cut(clean(run.task), 120)}". Keep the approved plan (units, owned files, interfaces, done conditions), the user's decisions, gate states, iteration ${run.iteration ?? 0}, changed files, open blockers and the exact next step. The full state is in .foreman/run.json: re-read it after this compaction and carry on from its "next" field.`
     : cmd
       ? `/foreman:${cmd} is in progress. Keep what it has done, its findings so far, what is left, and the exact next step.`
       : undefined
@@ -68,7 +69,12 @@ export const matchUnit = (description: string, units: Unit[] = []) => {
   const d = description.trim().toLowerCase()
   const t = (u: Unit) => (u.title ?? '').trim().toLowerCase()
   if (!d) return undefined
-  return units.find(u => t(u) === d) ?? units.find(u => t(u) && (d.startsWith(t(u)) || t(u).startsWith(d)))
+  return (
+    units.find(u => t(u) === d) ??
+    units
+      .filter(u => t(u) && (d.startsWith(t(u)) || t(u).startsWith(d)))
+      .sort((a, b) => t(b).length - t(a).length)[0]
+  )
 }
 
 export const recorder = (exec: (args: string[]) => Promise<unknown>, clock: () => number) => {
@@ -114,6 +120,7 @@ export const register: Register = on => {
   let hasRunCommand = false
   let hint: string | undefined
   let rec: ReturnType<typeof recorder> | undefined
+  let loadConfig: () => Promise<Config | null> = async () => null
 
   on('skill.prompt', async ($, e, next) => {
     if (e.skill.startsWith(PREFIX)) {
@@ -143,8 +150,7 @@ export const register: Register = on => {
     if (!dir) return done
 
     if (!(await $.fs.stat(dir).then(s => s.kind === 'dir').catch(() => false))) return done
-    const config = await $.fs.read(`${dir}/config.json`).then(t => JSON.parse(t)).catch(() => null)
-    const at = config?.context?.compactAt ?? COMPACT_AT
+    const at = (await loadConfig())?.context?.compactAt ?? COMPACT_AT
     const pct = (await $.session.usage()).context.percent ?? 0
     if (at === false || pct < at || isCompacting) return done
 
@@ -177,6 +183,12 @@ export const register: Register = on => {
     dir = `${cwd}/.foreman`
     const json = (p: string) => $.fs.read(p).then(t => JSON.parse(t)).catch(() => null)
     const has = (p: string) => $.fs.stat(p).then(() => true).catch(() => false)
+    const home = await $.env.get('HOME').catch(() => undefined)
+    loadConfig = async () => {
+      const [user, project] = await Promise.all([home ? json(`${home}/.claude/foreman.json`) : null, json(`${dir}/config.json`)])
+      if (!user && !project) return null
+      return { ...user, ...project, context: { ...user?.context, ...project?.context }, models: { ...user?.models, ...project?.models } }
+    }
     const cli = (await has(`${$.plugin.root}/scripts/memory.mjs`)) ? `${$.plugin.root}/scripts/memory.mjs` : `${$.plugin.root}/../scripts/memory.mjs`
     rec = recorder(
       args => $.process.run(['node', '--no-warnings', cli, '--root', cwd, ...args]).then(r => {
@@ -212,7 +224,7 @@ export const register: Register = on => {
           }
           gates = run ? { ...run.gates } : null
           if (run?.active) {
-            config = await json(`${dir}/config.json`)
+            config = await loadConfig()
             max = config?.maxFixIterations ?? 3
           }
         }

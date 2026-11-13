@@ -4,14 +4,15 @@
 // Usage:  node scripts/packs.mjs <command> [options]   (run from the project root, or pass --root <dir>)
 //
 //   detect  [--json]                 packs matching this project's manifests and files, in precedence order
-//   build   --packs a,b [--json]     write .foreman/roles/<role>.md, skills.json packs/roles, import pack gotchas
+//   build   [--packs a,b] [--json]   write .foreman/roles/<role>/<pack>.md, skills.json packs/roles, import new pack gotchas; without --packs, rebuild the packs already selected
+//   check   [--json]                 whether the built roles match this plugin version
 //   lint    [--pack a,b] [--dir D]   check packs against packs/_schema.md (all by default)
 //   list    [--json]                 every bundled pack with its rule count and role word counts
 
 import fs from "node:fs";
 import path from "node:path";
 import { openDb } from "./lib/db.mjs";
-import { PACKS_DIR, ROLES, build, detect, lint, loadPacks, scan } from "./lib/packs.mjs";
+import { PACKS_DIR, ROLES, build, builtState, detect, lint, loadPacks, scan } from "./lib/packs.mjs";
 import { list } from "./lib/util.mjs";
 
 const argv = process.argv.slice(2);
@@ -32,7 +33,7 @@ const commands = {
     out(hits.map((h) => `${h.name.padEnd(16)} ${h.reason}`).join("\n"), hits);
   },
   build() {
-    const names = list(flags.packs);
+    const names = flags.packs ? list(flags.packs) : builtState(path.join(ROOT, ".foreman")).packs.filter((n) => packs.has(n));
     if (!names.length) throw new Error("build --packs a,b (from detect, after the user confirms)");
     const db = openDb(path.join(ROOT, ".foreman"));
     try {
@@ -41,6 +42,10 @@ const commands = {
     } finally {
       db.close();
     }
+  },
+  check() {
+    const s = builtState(path.join(ROOT, ".foreman"));
+    out(!s.packs.length ? "no packs built: run /foreman:map" : s.stale ? `stale: roles built with foreman ${s.builtWith ?? "an older version"}, this is ${s.version}; run "packs.mjs build" to rebuild them from the same packs` : `current (${s.version})`, s);
   },
   lint() {
     const only = list(flags.pack);

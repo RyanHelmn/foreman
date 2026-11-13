@@ -3,7 +3,7 @@ import path from "node:path";
 import { ftsUpsert } from "./db.mjs";
 import { costRows, featureStats, summarizeCost } from "./evidence.mjs";
 import { exportMd } from "./export.mjs";
-import { fail, ktok, list, money, now } from "./util.mjs";
+import { fail, ktok, list, money, now, writeSafe } from "./util.mjs";
 
 export function stats(db) {
   const c = (t, w = "") => db.prepare(`SELECT COUNT(*) n FROM ${t} ${w}`).get().n;
@@ -88,7 +88,8 @@ export function featureReport(db, dir, cfg, id) {
   if (c.tokens) md.push("", `By role: ${Object.entries(c.byRole).map(([k, v]) => `${k} ${money(v.cost, c.currency)}`).join(" · ")}`, `Priciest: #${c.top.id} ${c.top.role} ${c.top.model} ${c.top.unit || ""} ${money(c.top.cost, c.currency)}`.trimEnd());
   md.push("");
   const rp = path.join(dir, "reports", `${id}.md`);
+  writeSafe(rp);
   fs.mkdirSync(path.dirname(rp), { recursive: true });
-  fs.writeFileSync(rp, md.join("\n"));
+  writeSafe(rp, md.join("\n"));
   return { path: rp, feature: f, units, gates, lessons, cost: c };
 }

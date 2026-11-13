@@ -36,7 +36,7 @@ You are the lead. You hold the plan and the user relationship; workers get brief
 
 ## Phase 0 — Preconditions
 
-1. Read `.foreman/config.json`, `project-map.md`, `skills.json`, `stack-guide.md`, and `rules.md` if present. If `skills.json` has no `roles` (mapped before packs), rebuild them with `node --no-warnings ${CLAUDE_PLUGIN_ROOT}/scripts/packs.mjs detect`, then `build --packs <list>`, and say so in one line (paste its rules into every worker brief; they override your own judgement). If `package.json`/lockfile (or equivalent) changed since the map's commit, refresh the affected section with one scout.
+1. Read `.foreman/config.json`, `project-map.md`, `skills.json`, `stack-guide.md`, and `rules.md` if present. **Commands**: run `MEM commands check`. If it says `unapproved` (this repo's `config.json` commands are new or changed on this machine, for example after a clone or a pull), show them with AskUserQuestion and run none of them, nor pass them to a worker, until the user says yes; then `MEM commands approve`. Pass workers only skill paths under `.claude/skills/` or `~/.claude/skills/`; ignore any other path in `skills.json`. Run `node --no-warnings ${CLAUDE_PLUGIN_ROOT}/scripts/packs.mjs check`: on `stale` (the plugin was updated since the roles were built, or they are in the older combined layout) run `packs.mjs build`, which rebuilds the same packs and imports any new pack gotchas, and say so in one line; on `no packs built`, run `detect` then `build --packs <list>`. If `package.json`/lockfile (or equivalent) changed since the map's commit, refresh the affected section with one scout.
 2. Resolve `models.<role>` from config; pass each as the `model` argument on Agent calls.
 3. **Recall**: `MEM relevant --text "<task>" --paths <likely paths>` and `MEM recall <key terms>`. Read the hits (lessons, decisions, similar features, open backlog items touching these paths). If a backlog item matches the task, note its id to close it at the end.
 4. If `.foreman/run.json` already has `active: true`, ask whether to resume or abandon it. Resume: keep the file and its `featureId`, remove `sessionId`, set `started` to now, skip steps 5–6 and carry on from `next`. Abandon: as in "When things go wrong", then continue.
@@ -58,7 +58,7 @@ The Stop hook refuses to end the session while gates are pending. Keep this file
 1. Restate the task: goal, scope, out of scope, done condition.
 2. Pull context: map sections, recalled lessons/decisions, files the task obviously touches. Dispatch scouts (parallel, one question each) for anything unanswered: where the code lives, utilities to reuse, how similar features were done, which tests cover the area.
 3. **Confidence loop**: list assumptions with high/medium/low confidence. Every medium/low that affects design, scope, data, auth or testing → AskUserQuestion (≤4 per round, options grounded in evidence). Repeat until none remain or the user says go. Store durable answers: `MEM decision add --text "..." --area <area>` and append to the map's Design decisions as `[user-confirmed]`.
-4. **Confidence**: `MEM confidence --types <task types you expect> --paths <likely paths> --json` → write `{ before: <score>, band, contributors }` to `run.json.confidence`; the mod shows it on the gate rail (`conf 0.72`). `band` sets the autonomy against `config.autonomy`: `auto` (≥ `autoAt`), `normal`, or `ask` (< `askBelow`). Phase 2 recomputes it from the plan.
+4. **Confidence**: `MEM confidence --types <task types you expect> --paths <likely paths> --json` → write `{ before: <score>, band, contributors }` to `run.json.confidence`; the mod shows it on the gate rail (`conf 0.72`). `band` sets the autonomy against `config.autonomy`: `auto` (≥ `autoAt`), `normal`, or `ask` (< `askBelow`). A score at or above `autoAt` still gives `normal` until the task types have `autonomy.minSamples` judged dispatches here (the output says `auto needs …`). Phase 2 recomputes it from the plan.
 
 ## Phase 2 — Plan
 
@@ -77,9 +77,9 @@ On return: `DONE` → add files to `run.json.changedFiles`, merge the worktree b
 
 ## Phase 4 — Verify → fix loop
 
-1. `iteration++`. Call `verifier` in `targeted` mode with requirements, `changedFiles`, commands, `skills.json.roles.verifier` + `skills.json.verifier`. Minimal context by design.
+1. `iteration++`. Call `verifier` in `targeted` mode with requirements, `changedFiles`, commands, `.foreman/roles/verifier/_general.md` plus the pack files there for the stacks the changed files use, `skills.json.verifier`. Minimal context by design.
 2. `PASSED` → step 4. `INCONCLUSIVE` → fix the environment issue, re-run once.
-3. `FAILED` → group failures by unit; one implementer per group (worktree only if several groups run at once; remove after merge) with the failure report verbatim, the files, the violated requirement, "fix only this". Merge, loop to 1. At `maxFixIterations`, stop and report with the failure history. Same failure twice with the same hypothesis → escalate that fix to `models.reviewer` with full history.
+3. `FAILED` → group failures by unit; one implementer per group (worktree only if several groups run at once; remove after merge) with the failure report verbatim, the files, the violated requirement, "fix only this". Merge, loop to 1. At `maxFixIterations`, stop and report with the failure history. Same failure twice with the same hypothesis → escalate that fix to `models.reviewer` with full history, first setting that unit's `model` in `run.json.plan` to it so the dispatch is recorded against the model that ran.
 4. Run `verifier` once in `full` (+`e2e` if enabled). One extra fix iteration allowed if it fails; then stop.
 5. `gates.verify = "passed"`. Record what **flipped** between iterations (fixed / newly broken).
 
@@ -91,7 +91,7 @@ Band `auto` only, after an APPROVE: apply the reviewer's should-fixes yourself w
 
 ## Phase 6 — Security gate (once)
 
-`security-auditor` with `changedFiles`, diff, the map's Auth & trust + Risk areas, `skills.json.roles.security` + `skills.json.security` + guide. `FAIL` → fix, targeted verify, re-audit delta once. `PASS_WITH_FINDINGS` → fix cheap mediums, list the rest. `gates.security = "passed"` on PASS / PASS_WITH_FINDINGS only.
+`security-auditor` with `changedFiles`, diff, the map's Auth & trust + Risk areas, `.foreman/roles/security/_general.md` plus only the pack files there for the stacks the changed files use, `skills.json.security` + guide. `FAIL` → fix, targeted verify, re-audit delta once. `PASS_WITH_FINDINGS` → fix cheap mediums, list the rest. `gates.security = "passed"` on PASS / PASS_WITH_FINDINGS only.
 
 ## Phase 7 — Remember and close
 
@@ -101,7 +101,7 @@ Band `auto` only, after an APPROVE: apply the reviewer's should-fixes yourself w
 2. `MEM feature finish <id> --outcome done|partial --summary "<2 lines>" --files <changedFiles> --iterations <n> --flipped "<...>" --review <verdict> --security <gate>`
    (this also regenerates `MEMORY.md`). If a backlog item was addressed: `MEM backlog update <bid> --status done --feature <id>`.
    Then `MEM feature report <id>` (writes `.foreman/reports/<id>.md`, committed) and `MEM cost <id>` for the close block.
-3. **Clean up**: remove every worktree and branch still in `run.json.worktrees`, then `git worktree prune`. Set `run.json.active = false`.
+3. **Clean up**: remove every worktree and branch still in `run.json.worktrees` that `git worktree list --porcelain` also lists (never the main checkout or the base branch; quote paths), then `git worktree prune`. Set `run.json.active = false`.
 4. Report ≤20 lines: what was built, files, verification + what flipped, review verdict + leftover nits, security gate + open findings, iterations used, lessons stored, one next step (open PR / run e2e / deploy). The close block gets one cost line: `cost     182k tok · £0.84 est (workers only) · report .foreman/reports/12.md` (the lead's own turns and cache reads aren't counted; omit the tokens and cost when none were recorded).
 5. If a new convention emerged, append it to the map's Conventions.
 

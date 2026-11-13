@@ -72,29 +72,29 @@ test("detect matches deps, files and config keys, adds extends, and orders by la
   assert.equal(detect(loadPacks(dir), scan(repo)).find((h) => h.name === "lang").reason, "file lang.lock");
 });
 
-test("build writes one file per role with only the named rules, once each, in precedence order", () => {
+test("build writes one file per pack per role with only the named rules, in precedence order", () => {
   const dir = fixture();
   const out = tmp("foreman-out-");
   put(out, { "skills.json": { implementer: [".claude/skills/x/SKILL.md"] } });
+  fs.mkdirSync(path.join(out, "roles"), { recursive: true });
+  fs.writeFileSync(path.join(out, "roles", "reviewer.md"), "old combined file");
   const r = build(loadPacks(dir), ["fw"], out, memoryDb());
   assert.deepEqual(r.packs, ["_general", "lang", "fw"]);
-  const reviewer = fs.readFileSync(path.join(out, "roles", "reviewer.md"), "utf8");
-  const at = (s) => reviewer.indexOf(s);
-  assert.ok(at("## _general") < at("## lang") && at("## lang") < at("## fw"));
-  assert.equal(reviewer.split("### gen-a ·").length, 2);
-  assert.match(reviewer, /### fw-y · HIGH — fw-y title\n_it breaks_/);
-  assert.match(reviewer, /lang quirk/);
-  assert.doesNotMatch(reviewer, /fw-unused/);
-  assert.doesNotMatch(fs.readFileSync(path.join(out, "roles", "implementer.md"), "utf8"), /lang-x/);
-  const whole = fs.readFileSync(path.join(out, "roles", "implementer.md"), "utf8");
+  assert.ok(!fs.existsSync(path.join(out, "roles", "reviewer.md")));
+  const role = (role, pack) => fs.readFileSync(path.join(out, "roles", role, `${pack}.md`), "utf8");
+  assert.equal(role("reviewer", "_general").split("### gen-a ·").length, 2);
+  assert.match(role("reviewer", "fw"), /### fw-y · HIGH — fw-y title\n_it breaks_/);
+  assert.match(role("reviewer", "lang"), /lang quirk/);
+  for (const f of fs.readdirSync(path.join(out, "roles", "reviewer"))) assert.doesNotMatch(role("reviewer", f.slice(0, -3)), /fw-unused/);
   for (const f of fs.readdirSync(path.join(out, "roles", "implementer"))) {
-    const one = fs.readFileSync(path.join(out, "roles", "implementer", f), "utf8");
+    const one = role("implementer", f.slice(0, -3));
     assert.match(one, new RegExp(`^# implementer · ${f.slice(0, -3)}\n`));
-    for (const h of one.match(/^### \S+/gm) ?? []) assert.ok(whole.includes(h), `${f}: ${h} is in the combined file`);
+    assert.doesNotMatch(one, /lang-x/);
   }
+  assert.ok(r.words.reviewer > 0);
   const skills = JSON.parse(fs.readFileSync(path.join(out, "skills.json"), "utf8"));
   assert.deepEqual(skills.implementer, [".claude/skills/x/SKILL.md"]);
-  assert.equal(skills.roles.reviewer, ".foreman/roles/reviewer.md");
+  assert.equal(skills.roles.reviewer, ".foreman/roles/reviewer/");
   assert.throws(() => build(loadPacks(dir), ["nope"], out, memoryDb()), /unknown pack nope/);
 });
 
@@ -117,6 +117,13 @@ test("relevant finds a glob-pathed lesson, and the CLI builds roles end to end",
   const run = (script, ...a) => execFileSync("node", ["--no-warnings", new URL(script, import.meta.url).pathname, "--root", repo, ...a], { encoding: "utf8", env });
   run("./memory.mjs", "lesson", "add", "--kind", "gotcha", "--text", "guards run in order", "--paths", "**/app.module.ts");
   assert.match(run("./memory.mjs", "relevant", "--paths", "apps/api/src/app.module.ts"), /guards run in order/);
+  assert.match(run("./packs.mjs", "check"), /no packs built/);
   assert.match(run("./packs.mjs", "build", "--packs", "_general"), /packs\s+_general/);
-  assert.ok(fs.existsSync(path.join(repo, ".foreman", "roles", "security.md")));
+  assert.match(run("./packs.mjs", "check"), /^current/);
+  const sj = path.join(repo, ".foreman", "skills.json");
+  fs.writeFileSync(sj, JSON.stringify({ ...JSON.parse(fs.readFileSync(sj, "utf8")), builtWith: "0.0.1" }));
+  assert.match(run("./packs.mjs", "check"), /stale: roles built with foreman 0\.0\.1/);
+  assert.match(run("./packs.mjs", "build"), /packs\s+_general/);
+  assert.match(run("./packs.mjs", "check"), /^current/);
+  assert.ok(fs.existsSync(path.join(repo, ".foreman", "roles", "security", "_general.md")));
 });

@@ -171,7 +171,7 @@ export function confidence(db, cfg, { types = [], paths = [] }, priors = loadPri
   const changed = [...reviewed.values()].filter(Boolean).length;
   const rc = reviewed.size ? changed / reviewed.size : 0.5;
   const backlog = db.prepare("SELECT paths FROM backlog WHERE status='open' AND severity IN ('critical','high')").all().filter((b) => touches(b.paths, q)).length;
-  const gotchas = db.prepare("SELECT paths FROM lessons WHERE kind='gotcha'").all().filter((l) => touches(l.paths, q)).length;
+  const gotchas = db.prepare("SELECT paths FROM lessons WHERE kind='gotcha' AND IFNULL(source,'') != 'pack'").all().filter((l) => touches(l.paths, q)).length;
   // score = 1 − 0.45·(1−firstPass) − 0.25·reviewChangeRate − min(0.2, 0.1·openCritHighBacklog) − min(0.1, 0.05·gotchas)
   // unknown rates default to 0.5, so a repo with no evidence scores 0.65 (between askBelow and autoAt); monotone: more risk never raises it
   const contributors = [
@@ -181,6 +181,8 @@ export function confidence(db, cfg, { types = [], paths = [] }, priors = loadPri
     { factor: "gotchas", penalty: Math.min(0.1, 0.05 * gotchas), detail: `${gotchas} gotcha lesson${gotchas === 1 ? "" : "s"} on these paths` },
   ].sort((a, b) => b.penalty - a.penalty);
   const score = Math.max(0, Math.min(1, 1 - contributors.reduce((a, c) => a + c.penalty, 0)));
-  const band = score >= cfg.autonomy.autoAt ? "auto" : score < cfg.autonomy.askBelow ? "ask" : "normal";
-  return { score: Math.round(score * 100) / 100, band, contributors: contributors.slice(0, 3).map((c) => ({ ...c, penalty: Math.round(c.penalty * 100) / 100 })) };
+  const need = cfg.autonomy.minSamples ?? DEFAULTS.autonomy.minSamples;
+  const held = score >= cfg.autonomy.autoAt && judged.length < need;
+  const band = score < cfg.autonomy.askBelow ? "ask" : score >= cfg.autonomy.autoAt && !held ? "auto" : "normal";
+  return { score: Math.round(score * 100) / 100, band, samples: judged.length, ...(held ? { held: `auto needs ${need} judged dispatches for these task types (have ${judged.length})` } : {}), contributors: contributors.slice(0, 3).map((c) => ({ ...c, penalty: Math.round(c.penalty * 100) / 100 })) };
 }

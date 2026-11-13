@@ -1,7 +1,14 @@
 {
   "name": "foreman",
-  "owner": { "name": "Ryan Helmn" },
+  "owner": {
+    "name": "Ryan Helmn"
+  },
+  "description": "foreman: tiered orchestration for Claude Code with verified, reviewed, security-checked runs and project memory",
   "plugins": [
-    { "name": "foreman", "source": "./", "description": "Tiered subagent orchestration with project memory" }
+    {
+      "name": "foreman",
+      "source": "./",
+      "description": "Tiered subagent orchestration with project memory"
+    }
   ]
 }
